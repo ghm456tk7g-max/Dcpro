@@ -1,8 +1,8 @@
-"""Einstellungen inkl. verschlüsselter Zugangsdaten.
+"""Einstellungen inkl. verschlüsseltem Claude-API-Key.
 
-Unter Windows werden Passwort und API-Key mit der Windows-DPAPI
-(CryptProtectData) verschlüsselt. Die Daten sind damit an dein
-Windows-Benutzerkonto gebunden und auf einem anderen PC/Konto nicht lesbar.
+Unter Windows wird der API-Key mit der Windows-DPAPI (CryptProtectData)
+verschlüsselt. Er ist damit an dein Windows-Benutzerkonto gebunden und auf
+einem anderen PC/Konto nicht lesbar.
 """
 
 import base64
@@ -13,15 +13,12 @@ import sys
 
 from .paths import SETTINGS_PATH
 
-SECRET_FIELDS = ("autodarts_password", "anthropic_api_key")
+SECRET_FIELDS = ("anthropic_api_key",)
 
 DEFAULTS = {
-    "autodarts_email": "",
-    "autodarts_password": "",
     "anthropic_api_key": "",
     "claude_model": "claude-opus-5-5",
-    "match_limit": 50,
-    "keycloak_client_id": "autodarts-play",
+    "player_name": "",
     "appearance": "dark",
 }
 
@@ -42,8 +39,7 @@ if sys.platform == "win32":
 
     def _protect(data: bytes) -> bytes:
         out = _DataBlob()
-        ent = _blob(_ENTROPY)
-        if not _crypt32.CryptProtectData(ctypes.byref(_blob(data)), "AutodartsCoach", ctypes.byref(ent),
+        if not _crypt32.CryptProtectData(ctypes.byref(_blob(data)), "AutodartsCoach", ctypes.byref(_blob(_ENTROPY)),
                                          None, None, 0x01, ctypes.byref(out)):
             raise ctypes.WinError()
         try:
@@ -53,8 +49,7 @@ if sys.platform == "win32":
 
     def _unprotect(data: bytes) -> bytes:
         out = _DataBlob()
-        ent = _blob(_ENTROPY)
-        if not _crypt32.CryptUnprotectData(ctypes.byref(_blob(data)), None, ctypes.byref(ent),
+        if not _crypt32.CryptUnprotectData(ctypes.byref(_blob(data)), None, ctypes.byref(_blob(_ENTROPY)),
                                            None, None, 0x01, ctypes.byref(out)):
             raise ctypes.WinError()
         try:
@@ -80,17 +75,12 @@ def encrypt(value: str) -> str:
 
 
 def decrypt(value: str) -> str:
-    if not value:
+    if not value or not value.startswith(_PREFIX):
         return ""
-    for prefix in ("dpapi:", "plain:"):
-        if value.startswith(prefix):
-            if prefix != _PREFIX:
-                return ""
-            try:
-                return _unprotect(base64.b64decode(value[len(prefix):])).decode("utf-8")
-            except Exception:
-                return ""
-    return ""
+    try:
+        return _unprotect(base64.b64decode(value[len(_PREFIX):])).decode("utf-8")
+    except Exception:
+        return ""
 
 
 def load_settings() -> dict:
@@ -100,16 +90,15 @@ def load_settings() -> dict:
             with open(SETTINGS_PATH, "r", encoding="utf-8") as f:
                 stored = json.load(f)
             for k, v in stored.items():
-                settings[k] = decrypt(v) if k in SECRET_FIELDS else v
+                if k in DEFAULTS:
+                    settings[k] = decrypt(v) if k in SECRET_FIELDS else v
         except Exception:
             pass
     return settings
 
 
 def save_settings(settings: dict) -> None:
-    out = {}
-    for k, v in settings.items():
-        out[k] = encrypt(v) if k in SECRET_FIELDS else v
+    out = {k: (encrypt(v) if k in SECRET_FIELDS else v) for k, v in settings.items() if k in DEFAULTS}
     tmp = SETTINGS_PATH + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(out, f, indent=2, ensure_ascii=False)
@@ -117,5 +106,4 @@ def save_settings(settings: dict) -> None:
 
 
 def is_configured(settings: dict) -> bool:
-    return bool(settings.get("autodarts_email") and settings.get("autodarts_password")
-                and settings.get("anthropic_api_key"))
+    return bool(settings.get("anthropic_api_key"))

@@ -6,14 +6,16 @@ import json
 import anthropic
 
 SYSTEM_PROMPT = """Du bist ein erfahrener, ehrlicher Steel-Dart-Coach (PDC-Niveau) und analysierst die \
-Autodarts-Statistiken eines Spielers. Antworte immer auf Deutsch, direkt und konkret, ohne Schönfärberei.
+Trainings- und Spielstatistiken eines Spielers, der auf Autodarts spielt und seine Werte nach jeder Session \
+selbst einträgt. Antworte immer auf Deutsch, direkt und konkret, ohne Schönfärberei.
 
 Du bekommst als JSON:
-- aktuelle Kennzahlen (Gesamt und Form der letzten 10 Matches),
-- den Vergleich zum letzten Abruf (Fortschritte/Rückschritte),
-- die Kennzahlen früherer Abrufe (Verlauf),
-- eine Liste der letzten Matches mit Einzelwerten,
-- die Roh-Statistiken der Autodarts-API.
+- die aktuelle Session (eingetragene Rohwerte, berechnete Kennzahlen, Notizen des Spielers),
+- den Vergleich zur vorherigen Session (Fortschritte/Rückschritte),
+- den Schnitt der letzten 5 Sessions im Vergleich zum Schnitt der Sessions davor (Trend),
+- den Verlauf aller früheren Sessions.
+Einzelne Sessions schwanken stark – bewerte Trends über mehrere Sessions höher als eine einzelne Session. \
+Nicht jede Session enthält alle Werte.
 
 Gliedere deine Antwort exakt in diese Abschnitte (Markdown-Überschriften mit ##):
 
@@ -21,7 +23,7 @@ Gliedere deine Antwort exakt in diese Abschnitte (Markdown-Überschriften mit ##
 2–4 Sätze: Wo steht der Spieler, Trend (besser/schlechter), Leistungsniveau grob einordnen.
 
 ## 2. Fortschritte & Rückschritte
-Die wichtigsten Veränderungen gegenüber früheren Abrufen mit Zahlen, und was sie bedeuten.
+Die wichtigsten Veränderungen gegenüber früheren Sessions mit Zahlen, und was sie bedeuten.
 
 ## 3. Schwachstellen-Analyse (Flaschenhals)
 Benenne den EINEN größten Flaschenhals ehrlich (z. B. Scoring vs. Doppel vs. Konstanz/First-9 vs. Finish) \
@@ -41,8 +43,11 @@ Bogey-Zahlen vermeiden), passend zu seiner Doppelquote.
 ## 6. Mentale & technische Tipps
 3–5 konkrete Punkte (Wurfrhythmus, Stand, Routinen, Druck beim Checkout).
 
-## 7. Ziele bis zum nächsten Abruf
+## 7. Ziele für die nächsten Sessions
 2–3 messbare Ziele (z. B. Average +1,5, Doppelquote > 35 %).
+
+## 8. Was du nächstes Mal zusätzlich eintragen solltest
+Nur falls für eine bessere Analyse wichtige Werte fehlen (z. B. First-9 oder Doppel-Darts) – kurz, max. 2 Punkte.
 
 Wenn Daten fehlen oder unplausibel sind, sag das kurz und arbeite mit dem, was vorhanden ist. \
 Erfinde keine Zahlen."""
@@ -52,18 +57,18 @@ class CoachError(Exception):
     pass
 
 
-def build_payload(current: dict, comparison: list, history: list, matches: list, raw: dict) -> str:
-    def ts(t):
-        return dt.datetime.fromtimestamp(t).strftime("%Y-%m-%d %H:%M")
+def build_payload(player: str, session: dict, comparison: list, trend: dict, history: list) -> str:
+    def brief(s):
+        return {"datum": s["date"], "modus": s["mode"], "kennzahlen": s["metrics"],
+                **({"notizen": s["notes"]} if s.get("notes") else {})}
 
     payload = {
         "heute": dt.date.today().isoformat(),
-        "spieler": raw.get("username"),
-        "aktuelle_kennzahlen": current,
-        "vergleich_zum_letzten_abruf": comparison,
-        "verlauf_frueherer_abrufe": [{"zeit": ts(h["created_at"]), "kennzahlen": h["metrics"]} for h in history],
-        "letzte_matches": matches,
-        "autodarts_roh_statistiken": raw.get("user_stats", {}),
+        "spieler": player or None,
+        "aktuelle_session": {**brief(session), "eingetragene_werte": session["entry"]},
+        "vergleich_zur_vorherigen_session": comparison,
+        "trend_letzte_5_vs_davor": trend,
+        "verlauf_fruehere_sessions_neueste_zuerst": [brief(s) for s in history],
     }
     return json.dumps(payload, ensure_ascii=False, indent=1, default=str)
 
@@ -85,7 +90,7 @@ def run_coach(api_key: str, model: str, payload_json: str, on_text) -> str:
             fallbacks="default",
             messages=[{
                 "role": "user",
-                "content": "Hier sind meine aktuellen Autodarts-Daten. Bitte analysiere sie und erstelle "
+                "content": "Hier sind meine aktuellen Dart-Statistiken. Bitte analysiere sie und erstelle "
                            "meinen Trainingsplan.\n\n```json\n" + payload_json + "\n```",
             }],
         ) as stream:

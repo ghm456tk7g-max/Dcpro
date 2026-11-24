@@ -1,19 +1,20 @@
-"""Lokale Historie in SQLite (Datei liegt neben der .exe)."""
+"""Lokale Historie der eingetragenen Sessions in SQLite (Datei liegt neben der .exe)."""
 
 import json
 import sqlite3
 import time
-import zlib
 
 from .paths import DB_PATH
 
 SCHEMA = """
-CREATE TABLE IF NOT EXISTS snapshots (
+CREATE TABLE IF NOT EXISTS sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     created_at REAL NOT NULL,
+    session_date TEXT NOT NULL,
+    mode TEXT,
+    entry TEXT NOT NULL,
     metrics TEXT NOT NULL,
-    matches TEXT NOT NULL,
-    raw BLOB,
+    notes TEXT,
     coach_text TEXT
 );
 """
@@ -28,31 +29,30 @@ class Storage:
     def _conn(self):
         return sqlite3.connect(self.path)
 
-    def add_snapshot(self, metrics: dict, matches: list, raw: dict) -> int:
-        blob = zlib.compress(json.dumps(raw, ensure_ascii=False, default=str).encode("utf-8"))
+    def add(self, session_date: str, mode: str, entry: dict, metrics: dict, notes: str) -> int:
         with self._conn() as c:
-            cur = c.execute("INSERT INTO snapshots (created_at, metrics, matches, raw) VALUES (?,?,?,?)",
-                            (time.time(), json.dumps(metrics), json.dumps(matches, default=str), blob))
+            cur = c.execute(
+                "INSERT INTO sessions (created_at, session_date, mode, entry, metrics, notes) VALUES (?,?,?,?,?,?)",
+                (time.time(), session_date, mode, json.dumps(entry), json.dumps(metrics), notes))
             return cur.lastrowid
 
-    def set_coach_text(self, snap_id: int, text: str) -> None:
+    def update(self, sid: int, session_date: str, mode: str, entry: dict, metrics: dict, notes: str) -> None:
         with self._conn() as c:
-            c.execute("UPDATE snapshots SET coach_text=? WHERE id=?", (text, snap_id))
+            c.execute("UPDATE sessions SET session_date=?, mode=?, entry=?, metrics=?, notes=?, coach_text=NULL "
+                      "WHERE id=?", (session_date, mode, json.dumps(entry), json.dumps(metrics), notes, sid))
 
-    def list_snapshots(self, limit: int = 200) -> list[dict]:
+    def set_coach_text(self, sid: int, text: str) -> None:
         with self._conn() as c:
-            rows = c.execute("SELECT id, created_at, metrics, matches, coach_text FROM snapshots "
-                             "ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
-        return [{"id": r[0], "created_at": r[1], "metrics": json.loads(r[2]),
-                 "matches": json.loads(r[3]), "coach_text": r[4]} for r in rows]
+            c.execute("UPDATE sessions SET coach_text=? WHERE id=?", (text, sid))
 
-    def get_raw(self, snap_id: int) -> dict | None:
+    def delete(self, sid: int) -> None:
         with self._conn() as c:
-            row = c.execute("SELECT raw FROM snapshots WHERE id=?", (snap_id,)).fetchone()
-        if not row or row[0] is None:
-            return None
-        return json.loads(zlib.decompress(row[0]).decode("utf-8"))
+            c.execute("DELETE FROM sessions WHERE id=?", (sid,))
 
-    def delete_snapshot(self, snap_id: int) -> None:
+    def list(self) -> list[dict]:
+        """Alle Sessions, neueste zuerst (nach Session-Datum, dann Eingabezeit)."""
         with self._conn() as c:
-            c.execute("DELETE FROM snapshots WHERE id=?", (snap_id,))
+            rows = c.execute("SELECT id, created_at, session_date, mode, entry, metrics, notes, coach_text "
+                             "FROM sessions ORDER BY session_date DESC, id DESC").fetchall()
+        return [{"id": r[0], "created_at": r[1], "date": r[2], "mode": r[3] or "", "entry": json.loads(r[4]),
+                 "metrics": json.loads(r[5]), "notes": r[6] or "", "coach_text": r[7]} for r in rows]
