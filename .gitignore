@@ -1,0 +1,6 @@
+AutodartsCoach_Daten/
+build/
+dist/
+*.spec
+__pycache__/
+.venv/

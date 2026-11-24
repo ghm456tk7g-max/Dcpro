@@ -1,0 +1,40 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Abhaengigkeiten installieren
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller==6.11.1
+
+      - name: EXE bauen (PyInstaller --onefile --windowed)
+        run: pyinstaller --noconfirm --onefile --windowed --name AutodartsCoach --collect-data customtkinter main.py
+
+      - name: Starttest der EXE (Selbsttest)
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath "dist\AutodartsCoach.exe" -ArgumentList "--selftest" -PassThru
+          if (-not $p.WaitForExit(180000)) { $p.Kill(); Write-Error "EXE haengt"; exit 1 }
+          Write-Host "Exit-Code: $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) { Get-Content dist\AutodartsCoach_Daten\log.txt -ErrorAction SilentlyContinue; exit 1 }
+          if (-not (Test-Path "dist\AutodartsCoach_Daten\selftest_ok.txt")) { Write-Error "Selbsttest-Datei fehlt"; exit 1 }
+          Write-Host "SELFTEST OK"
+          Get-Item dist\AutodartsCoach.exe | Format-List Name, Length
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AutodartsCoach
+          path: dist/AutodartsCoach.exe
