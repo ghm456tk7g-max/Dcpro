@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  background: #0f1216;
+}
+
+/* Tablet-Anzeigemodus: alles etwas größer für die Ansicht neben der Scheibe */
+html.tablet {
+  font-size: 18px;
+}
+@media (min-width: 1024px) {
+  html.tablet {
+    font-size: 20px;
+  }
+}
+
+body {
+  @apply bg-bg font-sans text-white antialiased;
+  background-image: radial-gradient(1200px 500px at 85% -10%, rgba(16, 185, 129, 0.07), transparent 60%),
+    radial-gradient(900px 400px at -10% 0%, rgba(245, 196, 81, 0.04), transparent 60%);
+  background-attachment: fixed;
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #262c36;
+  border-radius: 8px;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}

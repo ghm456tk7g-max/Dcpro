@@ -1,5 +1,7 @@
 # 🎯 Autodarts AI Coach
 
+> Neu im Repo: **Darts & Durstig Liga** (Web-App/PWA für die Liga) im Ordner [`liga-app/`](liga-app/README.md).
+
 Eigenständiges Windows-Programm (`AutodartsCoach.exe`), keine Python-Installation nötig.
 
 **Kein Bann-Risiko:** Das Programm verbindet sich **nicht** mit Autodarts. Du trägst deine Werte nach einer
