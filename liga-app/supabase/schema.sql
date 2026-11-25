@@ -1,5 +1,8 @@
 -- Darts & Durstig Liga – Supabase-Schema
--- Im Supabase-Dashboard unter "SQL Editor" einfügen und einmal ausführen.
+-- Im Supabase-Dashboard unter "SQL Editor" einfügen und einmal ausführen
+-- (kann auch erneut ausgeführt werden, z. B. nach einem Update).
+-- Danach: Authentication -> Sign In / Providers -> "Allow new users to sign up" AUS
+-- und die Konten unter Authentication -> Users -> "Add user" anlegen (siehe README).
 
 -- 1) Tabelle mit dem kompletten Liga-Stand (ein Datensatz, id = 'main')
 create table if not exists public.league_state (
@@ -15,12 +18,12 @@ create table if not exists public.league_admin (
 );
 insert into public.league_admin (id, pin) values (1, '1800') on conflict (id) do nothing;
 
--- 3) Row Level Security: jeder darf lesen, niemand darf direkt schreiben
+-- 3) Row Level Security: nur angemeldete Liga-Mitglieder dürfen lesen, niemand darf direkt schreiben
 alter table public.league_state enable row level security;
 alter table public.league_admin enable row level security;
 
 drop policy if exists "league_state lesen" on public.league_state;
-create policy "league_state lesen" on public.league_state for select using (true);
+create policy "league_state lesen" on public.league_state for select to authenticated using (true);
 -- (keine Policies auf league_admin -> PIN ist für die App nicht auslesbar)
 
 -- 4) Schreiben nur über Funktionen, die den PIN prüfen
@@ -50,9 +53,12 @@ end $$;
 revoke all on function public.save_league_state(text, jsonb) from public;
 revoke all on function public.verify_admin_pin(text) from public;
 revoke all on function public.change_admin_pin(text, text) from public;
-grant execute on function public.save_league_state(text, jsonb) to anon, authenticated;
-grant execute on function public.verify_admin_pin(text) to anon, authenticated;
-grant execute on function public.change_admin_pin(text, text) to anon, authenticated;
+revoke all on function public.save_league_state(text, jsonb) from anon;
+revoke all on function public.verify_admin_pin(text) from anon;
+revoke all on function public.change_admin_pin(text, text) from anon;
+grant execute on function public.save_league_state(text, jsonb) to authenticated;
+grant execute on function public.verify_admin_pin(text) to authenticated;
+grant execute on function public.change_admin_pin(text, text) to authenticated;
 
 -- 5) Echtzeit-Updates aktivieren
 do $$ begin

@@ -22,6 +22,12 @@ interface Ctx {
   state: LeagueState;
   loaded: boolean;
   store: Store;
+  /** Supabase-Modus: Seite nur mit Login */
+  authRequired: boolean;
+  /** undefined = wird geprüft, null = nicht angemeldet */
+  user: string | null | undefined;
+  signIn(user: string, password: string): Promise<string | null>;
+  signOut(): Promise<void>;
   conn: ConnStatus;
   isAdmin: boolean;
   /** Admin und nicht im Tablet-Modus -> Bearbeitungselemente anzeigen */
@@ -86,7 +92,17 @@ export function LeagueProvider({ children }: { children: ReactNode }) {
     if (s.updatedAt >= stateRef.current.updatedAt) setState(s);
   }, []);
 
+  // Login-Status (nur Supabase): undefined = wird geprüft, null = abgemeldet
+  const [user, setUser] = useState<string | null | undefined>(store.auth ? undefined : null);
   useEffect(() => {
+    if (!store.auth) return;
+    store.auth.current().then(setUser).catch(() => setUser(null));
+    return store.auth.onChange(setUser);
+  }, [store]);
+  const blocked = !!store.auth && !user;
+
+  useEffect(() => {
+    if (blocked) return;
     let alive = true;
     store
       .load()
@@ -98,11 +114,11 @@ export function LeagueProvider({ children }: { children: ReactNode }) {
       alive = false;
       unsub();
     };
-  }, [store, accept, toast]);
+  }, [store, accept, toast, blocked]);
 
   // gespeicherten PIN beim Start still prüfen (z. B. nach PIN-Änderung auf anderem Gerät)
   useEffect(() => {
-    if (!pin) return;
+    if (!pin || blocked) return;
     store
       .verifyPin(pin)
       .then((ok) => {
@@ -113,7 +129,7 @@ export function LeagueProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store]);
+  }, [store, blocked]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('tablet', tablet);
@@ -201,11 +217,27 @@ export function LeagueProvider({ children }: { children: ReactNode }) {
       }),
     );
 
+  const signIn = async (u: string, pw: string) => {
+    if (!store.auth) return null;
+    return store.auth.signIn(u, pw);
+  };
+  const signOut = async () => {
+    await store.auth?.signOut();
+    setPin(null);
+    writeLS(ADMIN_KEY, null);
+    setState(emptyState());
+    setLoaded(false);
+  };
+
   const isAdmin = !!pin;
   const value: Ctx = {
     state,
     loaded,
     store,
+    authRequired: !!store.auth,
+    user,
+    signIn,
+    signOut,
     conn,
     isAdmin,
     canEdit: isAdmin && !tablet,

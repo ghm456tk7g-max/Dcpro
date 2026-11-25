@@ -15,24 +15,51 @@ npm run dev        # http://localhost:5173 (im WLAN auch über die angezeigte Ne
 Ohne Supabase-Keys speichert die App alles im **LocalStorage** des Browsers.
 Zum Ausprobieren: **Admin → PIN `1800` → „Demo-Daten laden“** (8 Spieler, 2 gespielte Spieltage).
 
-## Live-Sync mit Supabase (mehrere Geräte)
+## Online stellen: eigene Website mit Login
 
-1. Kostenloses Projekt auf <https://supabase.com> anlegen.
-2. Im Dashboard **SQL Editor** öffnen, den Inhalt von [`supabase/schema.sql`](supabase/schema.sql) einfügen und **Run** klicken.
-   Damit werden Tabelle, PIN-Prüfung (Start-PIN `1800`) und Realtime eingerichtet.
-3. **Project Settings → API**: `Project URL` und den `anon` `public` Key kopieren.
-4. `.env.example` nach `.env.local` kopieren und eintragen:
-   ```
-   VITE_SUPABASE_URL=https://xxxx.supabase.co
-   VITE_SUPABASE_ANON_KEY=eyJhbGciOi...
-   ```
-5. `npm run dev` neu starten. Oben rechts steht jetzt **„Live“** statt „Lokal“.
+Ziel: `https://deine-domain.de` → Login-Seite → nur Liga-Mitglieder sehen Tabellen & Co.,
+Ergebnisse eintragen zusätzlich nur mit Admin-PIN.
 
-Beim Hosting (Netlify, Vercel, Cloudflare Pages …) dieselben zwei Variablen in den Projekt-Einstellungen
-setzen. Build-Befehl: `npm run build`, Ausgabeordner: `dist`.
+### 1. Supabase (Datenbank + Logins, kostenlos)
 
-Der anon-Key darf öffentlich sein: Er erlaubt nur Lesen. Geschrieben wird ausschließlich über die
-Datenbank-Funktion `save_league_state`, die den Admin-PIN serverseitig prüft.
+1. Auf <https://supabase.com> ein Projekt anlegen (Region z. B. Frankfurt).
+2. **SQL Editor** → Inhalt von [`supabase/schema.sql`](supabase/schema.sql) einfügen → **Run**.
+3. **Authentication → Sign In / Providers**: „Allow new users to sign up“ **ausschalten**
+   (sonst könnte sich jeder selbst ein Konto anlegen).
+4. **Authentication → Users → Add user → Create new user** für jeden Teilnehmer:
+   - E-Mail: `benutzername@ddliga.local` (z. B. `max@ddliga.local`) – angemeldet wird später nur mit `max`
+   - Passwort vergeben, **„Auto Confirm User“ anhaken**
+   - Wer lieber eine echte E-Mail-Adresse nutzt, meldet sich einfach mit dieser an.
+   - Alternativ ein einziges gemeinsames Konto, z. B. `liga@ddliga.local`.
+5. **Project Settings → API**: `Project URL` und `anon public` Key kopieren.
+
+Jeder kann sein Passwort danach in der App selbst ändern (Personen-Symbol oben rechts).
+Passwort vergessen? Im Supabase-Dashboard beim Nutzer ein neues setzen.
+
+### 2. Netlify (Hosting, kostenlos)
+
+1. Auf <https://netlify.com> mit GitHub anmelden → **Add new site → Import an existing project** → dieses Repo.
+2. **Base directory:** `liga-app` (Build-Befehl und Ordner kommen aus `netlify.toml`), Branch auswählen.
+3. **Environment variables:** `VITE_SUPABASE_URL` und `VITE_SUPABASE_ANON_KEY` eintragen → **Deploy**.
+
+### 3. Eigene Domain
+
+1. Domain bei einem beliebigen Anbieter mieten (z. B. IONOS, Strato, INWX, Namecheap).
+2. Netlify → **Domain management → Add a domain** → Domain eingeben.
+3. Beim Domain-Anbieter die DNS-Einträge setzen, die Netlify anzeigt
+   (typisch: `A`-Record `@` → `75.2.60.5` und `CNAME` `www` → `deine-seite.netlify.app`).
+4. HTTPS-Zertifikat erstellt Netlify automatisch (kann bis zu einer Stunde dauern).
+
+### Lokal mit Supabase testen
+
+`.env.example` nach `.env.local` kopieren, URL und Key eintragen, `npm run dev` neu starten.
+Ohne diese Werte läuft die App im lokalen Testmodus **ohne Login** (Daten nur im Browser).
+
+### Sicherheit
+
+- Der anon-Key im Website-Code ist öffentlich, das ist so vorgesehen. Die Datenbank gibt Daten aber nur an
+  angemeldete Konten heraus; Schreiben geht nur über eine Funktion, die zusätzlich den Admin-PIN prüft.
+- Der 4-stellige Admin-PIN ist eine Bedienungs-Sperre für angemeldete Mitglieder, kein starker Schutz.
 
 ## Bedienung
 
@@ -57,6 +84,5 @@ Datenbank-Funktion `save_league_state`, die den Admin-PIN serverseitig prüft.
 
 ## Hinweise
 
-- Ein 4-stelliger PIN ist eine Bedienungs-Sperre und keine echte Absicherung. Für eine Kneipenliga reicht das.
 - Es wird immer der komplette Liga-Stand gespeichert. Tragen zwei Admins in derselben Sekunde etwas ein,
   gewinnt die letzte Speicherung. Im Alltag passiert das praktisch nie.

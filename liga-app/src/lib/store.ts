@@ -11,7 +11,30 @@ export interface Store {
   subscribe(onChange: (s: LeagueState) => void, onStatus: (s: ConnStatus) => void): () => void;
   verifyPin(pin: string): Promise<boolean>;
   changePin(oldPin: string, newPin: string): Promise<boolean>;
+  /** Nur im Supabase-Modus: Login-Pflicht für die ganze Seite */
+  auth?: AuthApi;
 }
+
+export interface AuthApi {
+  /** angemeldeter Benutzername oder null */
+  current(): Promise<string | null>;
+  /** null = ok, sonst deutsche Fehlermeldung */
+  signIn(user: string, password: string): Promise<string | null>;
+  signOut(): Promise<void>;
+  changePassword(password: string): Promise<string | null>;
+  onChange(cb: (user: string | null) => void): () => void;
+}
+
+/** Benutzername -> Login-E-Mail (Supabase arbeitet intern mit E-Mail-Adressen) */
+const LOGIN_DOMAIN = (import.meta.env.VITE_LOGIN_DOMAIN as string | undefined) || 'ddliga.local';
+export const loginEmail = (user: string) => {
+  const u = user.trim().toLowerCase();
+  return u.includes('@') ? u : `${u}@${LOGIN_DOMAIN}`;
+};
+const displayName = (email: string | undefined | null) => {
+  if (!email) return null;
+  return email.endsWith('@' + LOGIN_DOMAIN) ? email.slice(0, -(LOGIN_DOMAIN.length + 1)) : email;
+};
 
 const STATE_ID = 'main';
 const DEFAULT_PIN = '1800';
@@ -59,7 +82,7 @@ function localStore(): Store {
 
 function supabaseStore(url: string, key: string): Store {
   const sb: SupabaseClient = createClient(url, key, {
-    auth: { persistSession: false },
+    auth: { persistSession: true, autoRefreshToken: true, storageKey: 'ddl-auth' },
     realtime: { params: { eventsPerSecond: 10 } },
   });
 
@@ -69,8 +92,35 @@ function supabaseStore(url: string, key: string): Store {
     return data?.data ? normalizeState(data.data) : null;
   };
 
+  const auth: AuthApi = {
+    async current() {
+      const { data } = await sb.auth.getSession();
+      return displayName(data.session?.user.email);
+    },
+    async signIn(user, password) {
+      const { error } = await sb.auth.signInWithPassword({ email: loginEmail(user), password });
+      if (!error) return null;
+      if (/invalid login credentials/i.test(error.message)) return 'Benutzername oder Passwort falsch';
+      if (/rate limit|too many/i.test(error.message)) return 'Zu viele Versuche – bitte kurz warten';
+      if (/fetch|network/i.test(error.message)) return 'Keine Verbindung zum Server – Internet prüfen';
+      return 'Anmeldung fehlgeschlagen: ' + error.message;
+    },
+    async signOut() {
+      await sb.auth.signOut();
+    },
+    async changePassword(password) {
+      const { error } = await sb.auth.updateUser({ password });
+      return error ? 'Passwort konnte nicht geändert werden: ' + error.message : null;
+    },
+    onChange(cb) {
+      const { data } = sb.auth.onAuthStateChange((_e, session) => cb(displayName(session?.user.email)));
+      return () => data.subscription.unsubscribe();
+    },
+  };
+
   return {
     mode: 'supabase',
+    auth,
     load,
     async save(state, pin) {
       const { error } = await sb.rpc('save_league_state', { p_pin: pin, p_data: state });

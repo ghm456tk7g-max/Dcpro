@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { CalendarRange, Flame, GitBranch, ListOrdered, Lock, LockOpen, Monitor, MonitorOff, Settings } from 'lucide-react';
+import { CircleUserRound, CalendarRange, Flame, GitBranch, ListOrdered, Lock, LockOpen, Monitor, MonitorOff, Settings } from 'lucide-react';
 import { useLeague } from './lib/league';
 import { currentDayNumber } from './lib/logic';
 import PlayerProfile from './components/PlayerProfile';
 import PinPad from './components/PinPad';
+import LoginScreen, { Logo } from './components/LoginScreen';
+import AccountModal from './components/AccountModal';
 import { Btn, Modal } from './components/ui';
 import MatchdayView from './views/MatchdayView';
 import RankingView from './views/RankingView';
@@ -25,24 +27,6 @@ const tabFromHash = (): Tab => {
   return TABS.some((t) => t.id === h) ? h : 'spieltag';
 };
 
-function Logo() {
-  return (
-    <div className="flex items-center gap-2.5">
-      <svg viewBox="0 0 32 32" className="h-8 w-8 shrink-0" aria-hidden>
-        <circle cx="16" cy="16" r="15" fill="#10b981" />
-        <circle cx="16" cy="16" r="11" fill="#0f1216" />
-        <circle cx="16" cy="16" r="7" fill="#ef4444" />
-        <circle cx="16" cy="16" r="3" fill="#0f1216" />
-        <circle cx="16" cy="16" r="1.4" fill="#10b981" />
-      </svg>
-      <div className="leading-none">
-        <div className="font-display text-[15px] font-extrabold tracking-wider sm:text-base">DARTS &amp; DURSTIG</div>
-        <div className="text-[10px] font-bold tracking-[0.35em] text-accent-light">LIGA</div>
-      </div>
-    </div>
-  );
-}
-
 function ConnBadge() {
   const { conn } = useLeague();
   const cfg = {
@@ -63,6 +47,7 @@ export default function App() {
   const { state, loaded, isAdmin, tablet, setTablet, profileId, toasts, confirmState, pinRequest, requestPin } = lg;
   const [tab, setTabState] = useState<Tab>(tabFromHash);
   const [day, setDay] = useState<number | null>(null);
+  const [accountOpen, setAccountOpen] = useState(false);
 
   useEffect(() => {
     const h = () => setTabState(tabFromHash());
@@ -75,6 +60,10 @@ export default function App() {
     setTabState(t);
     window.scrollTo({ top: 0 });
   };
+
+  if (lg.authRequired && lg.user === undefined)
+    return <div className="flex min-h-dvh items-center justify-center bg-bg text-muted">Lade…</div>;
+  if (lg.authRequired && !lg.user) return <LoginScreen />;
 
   // ausgewählter Spieltag folgt automatisch dem aktuellen, bis man selbst wählt
   const selectedDay = day ?? currentDayNumber(state);
@@ -101,6 +90,16 @@ export default function App() {
           </nav>
           <div className="ml-auto flex items-center gap-2">
             <ConnBadge />
+            {lg.authRequired && (
+              <button
+                onClick={() => setAccountOpen(true)}
+                className="flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-2 text-xs font-semibold text-muted transition hover:text-white"
+                title="Mein Konto"
+              >
+                <CircleUserRound size={16} />
+                <span className="hidden max-w-[8rem] truncate lg:inline">{lg.user}</span>
+              </button>
+            )}
             <button
               onClick={() => (isAdmin ? setTab('admin') : requestPin(true))}
               className={`rounded-lg border p-2 transition ${isAdmin ? 'border-accent/40 text-accent' : 'border-line text-muted hover:text-white'}`}
@@ -155,6 +154,7 @@ export default function App() {
       </nav>
 
       {profileId && <PlayerProfile />}
+      {lg.authRequired && <AccountModal open={accountOpen} onClose={() => setAccountOpen(false)} />}
 
       <Modal open={pinRequest} onClose={() => requestPin(false)} title="Admin-Anmeldung">
         <div className="p-6">
