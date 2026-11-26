@@ -49,7 +49,7 @@ export default function KoView({ day: dayNo, setDay }: { day: number; setDay(n: 
         <div>
           <h1 className="font-display text-2xl font-extrabold tablet:text-4xl">K.O.-Phase · Spieltag {dayNo}</h1>
           <p className="text-sm text-muted">
-            Obere Hälfte der Tages-Tabelle → Gewinner-Bracket, untere Hälfte → Loser-Bracket · First to {state.settings.koLegs}
+            Obere Hälfte der Tages-Tabelle → Gewinner-Bracket, untere Hälfte → Loser-Bracket · Best of {state.settings.koLegs * 2 - 1}
           </p>
         </div>
       </div>

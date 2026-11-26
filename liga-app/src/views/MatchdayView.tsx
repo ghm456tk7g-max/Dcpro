@@ -252,7 +252,7 @@ export default function MatchdayView({ day: dayNo, setDay, goAdmin }: { day: num
                   <Shuffle size={14} className={rolling ? 'animate-spin' : ''} /> {rolling ? 'Mische …' : 'Partien mischen'}
                 </button>
               ) : (
-                <span className="text-xs text-muted">First to {legs}</span>
+                <span className="text-xs text-muted">Best of {legs * 2 - 1}</span>
               )
             }
           >
