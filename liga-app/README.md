@@ -2,7 +2,7 @@
 
 Liga-, K.O.-Turnier- und Statistik-Plattform (Web-App + PWA) für 12 Spieltage mit
 Jeder-gegen-Jeden-Ligaphase und anschließender K.O.-Phase (Gewinner- & Loser-Bracket) an jedem Spieltag.
-Die Darts selbst zählt Scolia. Hier werden nur die fertigen Leg-Ergebnisse (z. B. 5:4) eingetragen.
+Die Darts selbst zählt Scolia. Hier werden nur die fertigen Leg-Ergebnisse (z. B. 2:1 bei Best of 3) eingetragen.
 
 ## Schnellstart (lokal, ohne Supabase)
 

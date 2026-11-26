@@ -19,7 +19,7 @@ export function buildDemoState(opts: { names?: string[]; guests?: boolean } = {}
   const SKILL = names.map((_, i) => 0.68 - (0.35 * i) / Math.max(1, names.length - 1));
   const rand = rng(1800);
   const state = emptyState();
-  state.settings = { ...state.settings, seasonName: '2026', leagueLegs: 5, koLegs: 5 };
+  state.settings = { ...state.settings, seasonName: '2026', leagueLegs: 2, koLegs: 2 };
   const players: Player[] = names.map((name) => ({ id: uid(), name, createdAt: new Date().toISOString() }));
   state.players = players;
   state.seasonStarted = true;
@@ -47,7 +47,7 @@ export function buildDemoState(opts: { names?: string[]; guests?: boolean } = {}
     day.matches = buildMatches(day.attendees, []);
     let t = new Date(`${date}T19:30:00`).getTime();
     for (const m of day.matches) {
-      const [la, lb] = play(m.a, m.b, 5);
+      const [la, lb] = play(m.a, m.b, state.settings.leagueLegs);
       m.legsA = la;
       m.legsB = lb;
       m.playedAt = new Date(t).toISOString();
@@ -66,7 +66,7 @@ export function buildDemoState(opts: { names?: string[]; guests?: boolean } = {}
           if (di === 1 && ri === b.rounds.length - 1) return;
           for (const m of round) {
             if (!m.p1 || !m.p2 || m.bye || day.koResults[m.id]) continue;
-            const [s1, s2] = play(m.p1, m.p2, 5);
+            const [s1, s2] = play(m.p1, m.p2, state.settings.koLegs);
             day.koResults[m.id] = { p1: m.p1, p2: m.p2, s1, s2, playedAt: new Date(t).toISOString() };
             t += 15 * 60 * 1000;
           }

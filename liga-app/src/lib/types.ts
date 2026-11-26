@@ -171,7 +171,7 @@ export interface LeagueState {
 
 export const emptyState = (): LeagueState => ({
   version: 1,
-  settings: { seasonName: '2026', leagueLegs: 5, koLegs: 5, dayFee: 15, fee180: 5, throwerPays180: true, clubFee: 10 },
+  settings: { seasonName: '2026', leagueLegs: 2, koLegs: 2, dayFee: 15, fee180: 5, throwerPays180: true, clubFee: 10 },
   players: [],
   seasonStarted: false,
   matchdays: [],
