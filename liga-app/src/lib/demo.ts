@@ -1,4 +1,5 @@
 import { buildMatches, createSeason, pruneKoResults, computeKo } from './logic';
+import { boardQueue, computeDE, createGroupPhase } from './tournament';
 import { LeagueState, Player, emptyState, uid } from './types';
 
 /** Kleiner deterministischer Zufallsgenerator, damit die Demo immer gleich aussieht */
@@ -73,6 +74,48 @@ export function buildDemoState(): LeagueState {
     }
     pruneKoResults(day, state.players);
   });
+  // Turnier: 8 Liga-Spieler + 2 Gäste, Gruppenphase gespielt, K.O.-Baum zur Hälfte
+  const t = state.tournament;
+  t.name = 'Winter-Cup 2026';
+  const today = new Date();
+  t.date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  t.participants = [
+    ...players.map((p, i) => ({ id: uid(), name: p.name, paid: i !== 3 && i !== 6, leagueId: p.id })),
+    { id: uid(), name: 'Gast Ömer', paid: true, leagueId: null },
+    { id: uid(), name: 'Gast Jule', paid: false, leagueId: null },
+  ];
+  const tSkill = new Map(t.participants.map((p, i) => [p.id, SKILL[i] ?? 0.5]));
+  const tPlay = (a: string, b: string, firstTo: number): [number, number] => {
+    const pa = tSkill.get(a)! / (tSkill.get(a)! + tSkill.get(b)!);
+    let la = 0;
+    let lb = 0;
+    while (la < firstTo && lb < firstTo) {
+      if (rand() < pa) la++;
+      else lb++;
+    }
+    return [la, lb];
+  };
+  const { groups, groupMatches } = createGroupPhase(
+    t.participants.map((p) => p.id),
+    rand,
+  );
+  t.groups = groups;
+  t.groupMatches = groupMatches;
+  // Spielzeiten in der Vergangenheit (vor ca. 5 Stunden gestartet), damit neue Einträge danach kommen
+  let tt = Date.now() - 5 * 60 * 60 * 1000;
+  for (const m of t.groupMatches) {
+    [m.legsA, m.legsB] = tPlay(m.a, m.b, t.groupLegs);
+    m.playedAt = new Date(tt).toISOString();
+    tt += 8 * 60 * 1000;
+  }
+  for (let k = 0; k < 7; k++) {
+    const q = boardQueue(t, computeDE(t))[0];
+    if (!q) break;
+    const [s1, s2] = tPlay(q.a, q.b, t.koLegs);
+    t.koResults[q.id] = { p1: q.a, p2: q.b, s1, s2, playedAt: new Date(tt).toISOString() };
+    tt += 10 * 60 * 1000;
+  }
+
   state.updatedAt = Date.now();
   return state;
 }

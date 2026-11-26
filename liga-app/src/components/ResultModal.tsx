@@ -11,12 +11,17 @@ export interface ResultTarget {
   firstTo: number;
   onSave(s1: number, s2: number): void;
   onClear?(): void;
+  /** Anzeigenamen, falls die Spieler keine Liga-Spieler sind (Turnier) */
+  names?: [string, string];
+  /** Zusatzinfo unter den Namen, z. B. "301 Single Out" */
+  note?: string;
 }
 
 /** Ein-Tipp-Eingabe: alle gültigen Ergebnisse für "First to N" als Buttons */
 export default function ResultModal({ target, onClose }: { target: ResultTarget | null; onClose(): void }) {
-  const name = usePlayerName();
+  const leagueName = usePlayerName();
   if (!target) return null;
+  const name = (id: string) => (id === target.p1 ? target.names?.[0] : id === target.p2 ? target.names?.[1] : undefined) ?? leagueName(id);
   const scores = validScores(target.firstTo);
   const left = scores.filter(([a, b]) => a > b);
   const right = scores.filter(([a, b]) => b > a);
@@ -49,7 +54,7 @@ export default function ResultModal({ target, onClose }: { target: ResultTarget 
           <div className="truncate font-display text-lg font-bold">{name(target.p2)}</div>
         </div>
         <p className="mb-4 text-center text-xs text-muted">
-          First to {target.firstTo} · Best of {target.firstTo * 2 - 1} · Ergebnis antippen
+          {target.note ? `${target.note} · ` : ''}First to {target.firstTo} · Best of {target.firstTo * 2 - 1} · Ergebnis antippen
         </p>
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-2">

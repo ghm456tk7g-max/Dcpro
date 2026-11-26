@@ -68,12 +68,28 @@ Ohne diese Werte läuft die App im lokalen Testmodus **ohne Login** (Daten nur i
 | **Übersicht / Spieltag** | Saison-Fortschritt, Spieltag 1–12, Anwesenheit, Ergebnis-Eingabe per Antippen, Tages-Tabelle, automatischer Tagessieg (+2) mit Override fürs Stechen |
 | **Rangliste** | Gesamt- oder Tages-Tabelle, Klick auf einen Spieler öffnet das Oche-Profil |
 | **K.O.-Phase** | Brackets entstehen automatisch, sobald alle Ligaspiele des Spieltags eingetragen sind (obere Hälfte ins Gewinner-, untere Hälfte ins Loser-Bracket, Freilose an die Bestplatzierten) |
+| **Turnier** | Eigenständiges Steeldart-Turnier: Teilnehmer & Kasse (Gebühr, Bezahlt Ja/Nein, aktueller Pot), Auslosung in 2 Gruppen mit optimierter Board-Reihenfolge, Gruppenphase (Jeder gegen Jeden), danach Double Elimination |
+| **Hall of Fame** | Titelverteidiger groß, Chronik aller Sieger mit Pot; Turniersieger per Klick übernehmen |
 | **Specials** | Zähler für 180er, High-Finishes (100+) und das höchste Finish pro Spieltag |
 | **Admin** | PIN-Login, Spieler, Leg-Distanzen, PIN ändern, neue Saison, Demo-Daten, Backup-Export/-Import |
 
 - **Tablet-Modus** (Monitor-Symbol oben rechts): blendet Eingaben aus und vergrößert die Schrift.
 - **Als App installieren:** Seite im Browser öffnen → „Zum Home-Bildschirm hinzufügen“.
   Die PWA funktioniert erst im Produktions-Build (`npm run build && npm run preview` bzw. gehostet über HTTPS).
+
+## Turnier-Modus (1 Board)
+
+- **Auslosung:** zufällig in 2 Gruppen (Größenunterschied max. 1). Die Board-Reihenfolge wird aus 400 zufälligen
+  Varianten ausgewählt: Gruppen abwechselnd (bei ungleicher Größe gleichmäßig verteilt), niemand zweimal direkt
+  hintereinander, möglichst gleichmäßige Pausen. Die Kennzahlen (längste Pause, spätester Einstieg) stehen über dem Spielplan.
+- **Gruppenphase:** Standard 301 Single Out, Best of 3. Sieg = 2 Punkte. Sortierung wie in der Liga
+  (Punkte → Leg-Differenz → gewonnene Legs → direkter Vergleich).
+- **Double Elimination:** obere Hälfte jeder Gruppe ins Winners Bracket (2 Leben), untere Hälfte ins Losers
+  Bracket (1 Leben), Gruppen über Kreuz gesetzt (A1, B1, A2, B2 …), Freilose an die Bestplatzierten.
+  Finale Winners- gegen Losers-Sieger, optional Reset-Finale. „Jetzt am Board“ wählt das nächste Spiel mit
+  Vorausschau so, dass möglichst niemand direkt hintereinander spielt. Nur am Ende, wenn nur noch ein Spiel offen ist,
+  lässt sich das nicht immer vermeiden.
+- **Kasse:** Pot = Anzahl „bezahlt: Ja“ × Teilnahmegebühr, live.
 
 ## Regeln (in der App umgesetzt)
 

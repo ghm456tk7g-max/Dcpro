@@ -101,11 +101,11 @@ export default function AdminView() {
   const loadDemo = async () => {
     const ok = await confirm({
       title: 'Demo-Daten laden?',
-      message: '8 Spieler und 2 gespielte Spieltage (inkl. K.O.-Phase und Specials) werden geladen. Alle aktuellen Daten werden überschrieben.',
+      message: '8 Spieler und 2 gespielte Spieltage (inkl. K.O.-Phase und Specials) sowie ein laufendes Turnier mit 10 Teilnehmern werden geladen. Alle aktuellen Daten werden überschrieben (die Hall of Fame bleibt erhalten).',
       confirmLabel: 'Demo laden',
       danger: n > 0,
     });
-    if (ok) replace(buildDemoState(), 'Demo-Daten geladen');
+    if (ok) replace({ ...buildDemoState(), hallOfFame: state.hallOfFame }, 'Demo-Daten geladen');
   };
 
   const resetAll = async () => {
@@ -115,7 +115,7 @@ export default function AdminView() {
       confirmLabel: 'Alles löschen',
       danger: true,
     });
-    if (ok) replace({ ...emptyState(), settings: state.settings }, 'Alle Daten gelöscht');
+    if (ok) replace({ ...emptyState(), settings: state.settings, hallOfFame: state.hallOfFame }, 'Alle Daten gelöscht (Hall of Fame bleibt)');
   };
 
   const exportJson = () => {

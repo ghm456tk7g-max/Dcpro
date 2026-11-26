@@ -54,12 +54,104 @@ export interface Matchday {
   specials: Record<string, SpecialEntry>;
 }
 
+/* ----------------------------- Turnier ----------------------------- */
+
+export interface TPlayer {
+  id: string;
+  name: string;
+  /** Teilnahmegebühr bezahlt */
+  paid: boolean;
+  /** Verknüpfung zum Liga-Spieler (optional) */
+  leagueId: string | null;
+}
+
+export type GroupKey = 'A' | 'B';
+
+export interface TGroupMatch {
+  id: string;
+  group: GroupKey;
+  a: string;
+  b: string;
+  legsA: number | null;
+  legsB: number | null;
+  playedAt: string | null;
+}
+
+export interface TResult {
+  p1: string;
+  p2: string;
+  s1: number;
+  s2: number;
+  playedAt: string;
+}
+
+export interface Tournament {
+  name: string;
+  date: string;
+  /** Teilnahmegebühr in Euro */
+  fee: number;
+  /** Anzeige, z. B. "301 Single Out" */
+  mode: string;
+  /** First to N (2 = Best of 3) */
+  groupLegs: number;
+  koLegs: number;
+  /** Reset-Finale, wenn der Spieler aus dem Losers Bracket das erste Finale gewinnt */
+  resetFinal: boolean;
+  participants: TPlayer[];
+  groups: Record<GroupKey, string[]> | null;
+  /** bereits in optimierter Board-Reihenfolge */
+  groupMatches: TGroupMatch[];
+  koResults: Record<string, TResult>;
+  /** gesetzt, sobald der Sieger in die Hall of Fame übernommen wurde */
+  hofEntryId: string | null;
+}
+
+export interface HallOfFameEntry {
+  id: string;
+  year: string;
+  date: string | null;
+  name: string;
+  /** gewonnener Pot in Euro */
+  pot: number;
+  tournament: string;
+  placeholder?: boolean;
+}
+
+export const defaultTournament = (): Tournament => ({
+  name: 'Steeldart-Turnier',
+  date: new Date().toISOString().slice(0, 10),
+  fee: 10,
+  mode: '301 Single Out',
+  groupLegs: 2,
+  koLegs: 2,
+  resetFinal: true,
+  participants: [],
+  groups: null,
+  groupMatches: [],
+  koResults: {},
+  hofEntryId: null,
+});
+
+export const defaultHallOfFame = (): HallOfFameEntry[] => [
+  {
+    id: 'placeholder-2025',
+    year: '2025',
+    date: '2025-12-13',
+    name: 'Max Mustermann',
+    pot: 100,
+    tournament: 'Steeldart-Turnier 2025',
+    placeholder: true,
+  },
+];
+
 export interface LeagueState {
   version: 1;
   settings: Settings;
   players: Player[];
   seasonStarted: boolean;
   matchdays: Matchday[];
+  tournament: Tournament;
+  hallOfFame: HallOfFameEntry[];
   updatedAt: number;
 }
 
@@ -69,6 +161,8 @@ export const emptyState = (): LeagueState => ({
   players: [],
   seasonStarted: false,
   matchdays: [],
+  tournament: defaultTournament(),
+  hallOfFame: defaultHallOfFame(),
   updatedAt: 0,
 });
 
@@ -100,6 +194,8 @@ export function normalizeState(raw: unknown): LeagueState {
           specials: d.specials ?? {},
         }))
       : [],
+    tournament: { ...defaultTournament(), ...(s.tournament ?? {}) },
+    hallOfFame: Array.isArray(s.hallOfFame) ? s.hallOfFame : defaultHallOfFame(),
     updatedAt: typeof s.updatedAt === 'number' ? s.updatedAt : 0,
   };
 }

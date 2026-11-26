@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CircleUserRound, CalendarRange, Flame, GitBranch, ListOrdered, Lock, LockOpen, Monitor, MonitorOff, Settings } from 'lucide-react';
+import { Award, Swords, CircleUserRound, CalendarRange, Flame, GitBranch, ListOrdered, Lock, LockOpen, Monitor, MonitorOff, Settings } from 'lucide-react';
 import { useLeague } from './lib/league';
 import { currentDayNumber } from './lib/logic';
 import PlayerProfile from './components/PlayerProfile';
@@ -12,13 +12,17 @@ import RankingView from './views/RankingView';
 import KoView from './views/KoView';
 import SpecialsView from './views/SpecialsView';
 import AdminView from './views/AdminView';
+import TournamentView from './views/TournamentView';
+import HallOfFameView from './views/HallOfFameView';
 
-type Tab = 'spieltag' | 'rangliste' | 'ko' | 'specials' | 'admin';
+type Tab = 'spieltag' | 'rangliste' | 'ko' | 'turnier' | 'specials' | 'hall-of-fame' | 'admin';
 const TABS: { id: Tab; label: string; short: string; icon: typeof ListOrdered }[] = [
   { id: 'spieltag', label: 'Übersicht / Spieltag', short: 'Spieltag', icon: CalendarRange },
   { id: 'rangliste', label: 'Rangliste', short: 'Rangliste', icon: ListOrdered },
   { id: 'ko', label: 'K.O.-Phase', short: 'K.O.', icon: GitBranch },
+  { id: 'turnier', label: 'Turnier', short: 'Turnier', icon: Swords },
   { id: 'specials', label: 'Specials', short: 'Specials', icon: Flame },
+  { id: 'hall-of-fame', label: 'Hall of Fame', short: 'HoF', icon: Award },
   { id: 'admin', label: 'Admin', short: 'Admin', icon: Settings },
 ];
 
@@ -69,22 +73,23 @@ export default function App() {
   const selectedDay = day ?? currentDayNumber(state);
 
   return (
-    <div className="min-h-dvh bg-bg pb-24 text-white md:pb-10">
+    <div className="min-h-dvh bg-bg pb-24 text-white lg:pb-10">
       <header className="sticky top-0 z-40 border-b border-line bg-bg/85 pt-[env(safe-area-inset-top)] backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4">
           <button onClick={() => setTab('spieltag')}>
             <Logo />
           </button>
-          <nav className="ml-4 hidden flex-1 items-center gap-1 md:flex">
+          <nav className="ml-2 hidden flex-1 items-center gap-0.5 lg:flex xl:ml-4 xl:gap-1">
             {TABS.map((t) => (
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                className={`whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-medium transition ${
                   tab === t.id ? 'bg-white/10 text-white' : 'text-muted hover:text-white'
                 }`}
               >
-                {t.label}
+                <span className="xl:hidden">{t.id === 'spieltag' ? 'Spieltag' : t.label}</span>
+                <span className="hidden xl:inline">{t.label}</span>
               </button>
             ))}
           </nav>
@@ -130,6 +135,10 @@ export default function App() {
           <RankingView day={selectedDay} setDay={setDay} />
         ) : tab === 'ko' ? (
           <KoView day={selectedDay} setDay={setDay} />
+        ) : tab === 'turnier' ? (
+          <TournamentView goHallOfFame={() => setTab('hall-of-fame')} />
+        ) : tab === 'hall-of-fame' ? (
+          <HallOfFameView goTournament={() => setTab('turnier')} />
         ) : tab === 'specials' ? (
           <SpecialsView day={selectedDay} setDay={setDay} />
         ) : (
@@ -138,13 +147,13 @@ export default function App() {
       </main>
 
       {/* Mobile Navigation */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
-        <div className="grid grid-cols-5">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">
+        <div className="grid grid-cols-7">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${tab === t.id ? 'text-accent-light' : 'text-muted'}`}
+              className={`flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium ${tab === t.id ? 'text-accent-light' : 'text-muted'}`}
             >
               <t.icon size={20} />
               {t.short}
@@ -178,7 +187,7 @@ export default function App() {
         </Modal>
       )}
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-20 z-[60] flex flex-col items-center gap-2 px-4 md:bottom-6">
+      <div className="pointer-events-none fixed inset-x-0 bottom-20 z-[60] flex flex-col items-center gap-2 px-4 lg:bottom-6">
         {toasts.map((t) => (
           <div
             key={t.id}

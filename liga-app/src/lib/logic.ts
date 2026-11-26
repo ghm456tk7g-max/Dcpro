@@ -70,7 +70,9 @@ export function createSeason(players: Player[]): Matchday[] {
 /* Status                                                               */
 /* ------------------------------------------------------------------ */
 
-export const isPlayed = (m: LeagueMatch) => m.legsA !== null && m.legsB !== null;
+export type Scored = Pick<LeagueMatch, 'a' | 'b' | 'legsA' | 'legsB'>;
+
+export const isPlayed = (m: Scored) => m.legsA !== null && m.legsB !== null;
 
 export const playedCount = (d: Matchday) => d.matches.filter(isPlayed).length;
 
@@ -112,7 +114,7 @@ export interface StatRow {
   points: number;
 }
 
-const emptyRow = (playerId: string): StatRow => ({
+export const emptyRow = (playerId: string): StatRow => ({
   playerId,
   played: 0,
   wins: 0,
@@ -124,7 +126,7 @@ const emptyRow = (playerId: string): StatRow => ({
   points: 0,
 });
 
-function accumulate(rows: Map<string, StatRow>, matches: LeagueMatch[]) {
+export function accumulate(rows: Map<string, StatRow>, matches: Scored[], winPoints = 1) {
   for (const m of matches) {
     if (!isPlayed(m)) continue;
     const ra = rows.get(m.a);
@@ -145,7 +147,7 @@ function accumulate(rows: Map<string, StatRow>, matches: LeagueMatch[]) {
   }
   rows.forEach((r) => {
     r.diff = r.legsFor - r.legsAgainst;
-    r.points = r.wins + r.dayWins * 2;
+    r.points = r.wins * winPoints + r.dayWins * 2;
   });
 }
 
@@ -153,7 +155,7 @@ const primaryCmp = (x: StatRow, y: StatRow) =>
   y.points - x.points || y.diff - x.diff || y.legsFor - x.legsFor;
 
 /** Sortierung: Punkte, Leg-Differenz, gewonnene Legs, direkter Vergleich (Mini-Tabelle der punktgleichen Spieler). */
-export function sortRows(rows: StatRow[], matches: LeagueMatch[], names: Map<string, string>): StatRow[] {
+export function sortRows(rows: StatRow[], matches: Scored[], names: Map<string, string>): StatRow[] {
   const sorted = [...rows].sort(primaryCmp);
   const out: StatRow[] = [];
   let i = 0;
