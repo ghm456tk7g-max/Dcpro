@@ -63,6 +63,8 @@ export interface TPlayer {
   paid: boolean;
   /** Verknüpfung zum Liga-Spieler (optional) */
   leagueId: string | null;
+  /** geworfene 180er im Turnier (jede erhöht den Pot) */
+  s180: number;
 }
 
 export type GroupKey = 'A' | 'B';
@@ -90,6 +92,8 @@ export interface Tournament {
   date: string;
   /** Teilnahmegebühr in Euro */
   fee: number;
+  /** Betrag in Euro, der pro geworfener 180 in den Pot kommt */
+  per180: number;
   /** Anzeige, z. B. "301 Single Out" */
   mode: string;
   /** First to N (2 = Best of 3) */
@@ -121,6 +125,7 @@ export const defaultTournament = (): Tournament => ({
   name: 'Steeldart-Turnier',
   date: new Date().toISOString().slice(0, 10),
   fee: 10,
+  per180: 1,
   mode: '301 Single Out',
   groupLegs: 2,
   koLegs: 2,
@@ -194,7 +199,11 @@ export function normalizeState(raw: unknown): LeagueState {
           specials: d.specials ?? {},
         }))
       : [],
-    tournament: { ...defaultTournament(), ...(s.tournament ?? {}) },
+    tournament: (() => {
+      const t = { ...defaultTournament(), ...(s.tournament ?? {}) };
+      t.participants = (t.participants ?? []).map((p) => ({ ...p, s180: p.s180 ?? 0, leagueId: p.leagueId ?? null }));
+      return t;
+    })(),
     hallOfFame: Array.isArray(s.hallOfFame) ? s.hallOfFame : defaultHallOfFame(),
     updatedAt: typeof s.updatedAt === 'number' ? s.updatedAt : 0,
   };

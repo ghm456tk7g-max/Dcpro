@@ -468,7 +468,17 @@ export function srcLabel(s: Src, names: Map<string, string>): string {
 /* ================================================================== */
 
 export const paidCount = (t: Tournament) => t.participants.filter((p) => p.paid).length;
-export const currentPot = (t: Tournament) => paidCount(t) * (Number.isFinite(t.fee) ? t.fee : 0);
+export const total180 = (t: Tournament) => t.participants.reduce((sum, p) => sum + (p.s180 ?? 0), 0);
+const num = (v: number) => (Number.isFinite(v) ? v : 0);
+
+/** Pot = bezahlte Gebühren + 180er-Einzahlungen */
+export function potBreakdown(t: Tournament) {
+  const fees = paidCount(t) * num(t.fee);
+  const bonus = total180(t) * num(t.per180);
+  const openFees = (t.participants.length - paidCount(t)) * num(t.fee);
+  return { fees, bonus, total: fees + bonus, openFees, possible: fees + bonus + openFees };
+}
+export const currentPot = (t: Tournament) => potBreakdown(t).total;
 export const euro = (v: number) =>
   v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: v % 1 ? 2 : 0 });
 

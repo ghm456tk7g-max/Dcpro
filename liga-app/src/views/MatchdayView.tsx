@@ -175,7 +175,7 @@ export default function MatchdayView({ day: dayNo, setDay, goAdmin }: { day: num
         </Card>
       )}
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] tablet:xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.3fr)]">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] tablet:xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.3fr)]">
         {/* Spiele */}
         <Card>
           <CardTitle
@@ -199,11 +199,11 @@ export default function MatchdayView({ day: dayNo, setDay, goAdmin }: { day: num
           {day.attendees.length < 2 ? (
             <p className="px-5 pb-5 text-sm text-muted">Mindestens 2 anwesende Spieler nötig.</p>
           ) : (
-            <div className="flex flex-col gap-4 px-3 pb-4 sm:px-4">
+            <div className="flex flex-col gap-3 px-3 pb-4 sm:px-4">
               {rounds.map((r) => (
                 <div key={r}>
                   <div className="mb-1.5 px-1 text-[11px] font-semibold uppercase tracking-wider text-muted">Runde {r + 1}</div>
-                  <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-1">
                     {day.matches
                       .filter((m) => m.round === r)
                       .map((m) => {
@@ -215,11 +215,11 @@ export default function MatchdayView({ day: dayNo, setDay, goAdmin }: { day: num
                             key={m.id}
                             onClick={() => openMatch(m)}
                             disabled={!canEdit}
-                            className={`grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition tablet:py-3.5 ${
+                            className={`grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-xl border px-3 py-2 transition tablet:py-3 ${
                               done ? 'border-line bg-panel2' : 'border-dashed border-line bg-transparent'
                             } ${canEdit ? 'hover:border-accent/60' : 'cursor-default'}`}
                           >
-                            <span className={`truncate text-sm tablet:text-xl ${aWin ? 'font-bold text-white' : done ? 'text-white/50' : 'text-white'}`}>{name(m.a)}</span>
+                            <span className={`truncate text-right text-sm tablet:text-xl ${aWin ? 'font-bold text-white' : done ? 'text-white/50' : 'text-white'}`}>{name(m.a)}</span>
                             <span
                               className={`min-w-[64px] rounded-lg px-2 py-1 text-center font-display font-bold tabular-nums tablet:min-w-[90px] tablet:text-2xl ${
                                 done ? 'bg-bg text-white' : 'text-muted'
@@ -237,7 +237,7 @@ export default function MatchdayView({ day: dayNo, setDay, goAdmin }: { day: num
                                 '– : –'
                               )}
                             </span>
-                            <span className={`truncate text-right text-sm tablet:text-xl ${bWin ? 'font-bold text-white' : done ? 'text-white/50' : 'text-white'}`}>{name(m.b)}</span>
+                            <span className={`truncate text-left text-sm tablet:text-xl ${bWin ? 'font-bold text-white' : done ? 'text-white/50' : 'text-white'}`}>{name(m.b)}</span>
                           </button>
                         );
                       })}

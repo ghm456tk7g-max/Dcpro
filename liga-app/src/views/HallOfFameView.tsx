@@ -140,7 +140,7 @@ export default function HallOfFameView({ goTournament }: { goTournament(): void 
         </Card>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         <Card>
           <CardTitle
             right={

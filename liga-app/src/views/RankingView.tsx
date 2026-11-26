@@ -49,7 +49,7 @@ export default function RankingView({ day, setDay }: { day: number; setDay(n: nu
         )}
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="p-4 text-sm text-muted sm:p-5">
           <div className="mb-2 font-semibold text-white">Punktesystem</div>
           <ul className="space-y-1">

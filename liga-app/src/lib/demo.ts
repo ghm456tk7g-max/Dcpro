@@ -80,9 +80,9 @@ export function buildDemoState(): LeagueState {
   const today = new Date();
   t.date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   t.participants = [
-    ...players.map((p, i) => ({ id: uid(), name: p.name, paid: i !== 3 && i !== 6, leagueId: p.id })),
-    { id: uid(), name: 'Gast Ömer', paid: true, leagueId: null },
-    { id: uid(), name: 'Gast Jule', paid: false, leagueId: null },
+    ...players.map((p, i) => ({ id: uid(), name: p.name, paid: i !== 3 && i !== 6, leagueId: p.id, s180: i === 0 ? 2 : i === 2 ? 1 : 0 })),
+    { id: uid(), name: 'Gast Ömer', paid: true, leagueId: null, s180: 1 },
+    { id: uid(), name: 'Gast Jule', paid: false, leagueId: null, s180: 0 },
   ];
   const tSkill = new Map(t.participants.map((p, i) => [p.id, SKILL[i] ?? 0.5]));
   const tPlay = (a: string, b: string, firstTo: number): [number, number] => {

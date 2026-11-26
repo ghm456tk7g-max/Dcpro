@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Award, Check, Coins, Crown, Dices, Medal, Plus, RotateCcw, Shuffle, Swords, Trash2, Trophy, UserPlus, Users, X } from 'lucide-react';
+import { Award, Check, Minus, Coins, Crown, Dices, Medal, Plus, RotateCcw, Shuffle, Swords, Trash2, Trophy, UserPlus, Users, X } from 'lucide-react';
 import { useLeague } from '../lib/league';
 import { formatDate, formatDiff, isPlayed, StatRow } from '../lib/logic';
 import {
@@ -7,6 +7,7 @@ import {
   computeDE,
   createGroupPhase,
   currentPot,
+  potBreakdown,
   DEMatchView,
   deLabel,
   euro,
@@ -17,6 +18,7 @@ import {
   QueueItem,
   reshuffleGroupOrder,
   scheduleStats,
+  total180,
   tNames,
 } from '../lib/tournament';
 import { defaultTournament, GroupKey, Tournament, uid } from '../lib/types';
@@ -105,6 +107,7 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
   const [section, setSection] = useState<Section>(() => (!t.groups ? 'teilnehmer' : groupDone ? 'ko' : 'gruppen'));
   const [target, setTarget] = useState<ResultTarget | null>(null);
   const [newName, setNewName] = useState('');
+  const [paidOnAdd, setPaidOnAdd] = useState(true);
   const [rolling, setRolling] = useState(false);
   /** kurze Würfel-Animation, dann mischen */
   const roll = (fn: () => void) => {
@@ -117,6 +120,7 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
 
   const n = t.participants.length;
   const pot = currentPot(t);
+  const potInfo = potBreakdown(t);
   const paid = paidCount(t);
   const groupPlayed = t.groupMatches.filter(isPlayed).length;
   const hasResults = groupPlayed > 0 || Object.keys(t.koResults).length > 0;
@@ -148,9 +152,9 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
     if (t.participants.some((p) => p.name.toLowerCase() === nm.toLowerCase())) return toast(`${nm} ist schon angemeldet`, 'error');
     if (!(await resetDrawIfNeeded(`${nm} hinzufügen`))) return;
     upd((x) => {
-      x.participants.push({ id: uid(), name: nm, paid: false, leagueId });
+      x.participants.push({ id: uid(), name: nm, paid: paidOnAdd, leagueId, s180: 0 });
       clearDraw(x);
-    }, `${nm} angemeldet`);
+    }, `${nm} angemeldet${paidOnAdd ? ` · Pot +${euro(t.fee)}` : ' (Gebühr noch offen)'}`);
     setNewName('');
   };
 
@@ -165,7 +169,19 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
   const setPaid = (id: string, v: boolean) =>
     upd((x) => {
       x.participants.find((p) => p.id === id)!.paid = v;
-    });
+    }, `${name(id)}: Gebühr ${v ? 'bezahlt' : 'offen'} · Pot ${euro(currentPot({ ...t, participants: t.participants.map((p) => (p.id === id ? { ...p, paid: v } : p)) }))}`);
+
+  const add180 = (id: string, delta: number) => {
+    const cur = t.participants.find((p) => p.id === id)?.s180 ?? 0;
+    if (cur + delta < 0) return;
+    upd(
+      (x) => {
+        const p = x.participants.find((y) => y.id === id)!;
+        p.s180 = Math.max(0, (p.s180 ?? 0) + delta);
+      },
+      delta > 0 ? `180! ${name(id)} · Pot +${euro(t.per180)}` : `180 bei ${name(id)} zurückgenommen`,
+    );
+  };
 
   const draw = async () => {
     if (n < 4) return toast('Mindestens 4 Teilnehmer nötig', 'error');
@@ -212,7 +228,10 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
     if (!ok) return;
     upd((x) => {
       clearDraw(x);
-      x.participants.forEach((p) => (p.paid = false));
+      x.participants.forEach((p) => {
+        p.paid = false;
+        p.s180 = 0;
+      });
       x.date = defaultTournament().date;
     }, 'Neues Turnier angelegt');
     setSection('teilnehmer');
@@ -311,7 +330,7 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
   return (
     <div className="flex flex-col gap-4">
       {/* Kopf: Turnier + Pot */}
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section className="relative overflow-hidden rounded-2xl border border-line bg-panel p-4 sm:p-6">
           <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-accent/10 blur-3xl" />
           <div className="relative">
@@ -342,10 +361,28 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
             <Coins size={16} /> Aktueller Pot
           </div>
           <div className="mt-1 font-display text-5xl font-extrabold tabular-nums text-gold tablet:text-6xl">{euro(pot)}</div>
-          <div className="mt-2 text-sm text-muted">
-            {paid} von {n} bezahlt · {euro(t.fee)} pro Spieler
+          <div className="mt-3 space-y-1 text-sm">
+            <div className="flex justify-between gap-3">
+              <span className="text-muted">
+                Gebühren · {paid} von {n} × {euro(t.fee)}
+              </span>
+              <span className="font-semibold tabular-nums">{euro(potInfo.fees)}</span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-muted">
+                180er · {total180(t)} × {euro(t.per180)}
+              </span>
+              <span className="font-semibold tabular-nums">{euro(potInfo.bonus)}</span>
+            </div>
+            {potInfo.openFees > 0 && (
+              <div className="flex justify-between gap-3 text-amber-200/90">
+                <span>Noch offen · {n - paid} Spieler</span>
+                <span className="font-semibold tabular-nums">{euro(potInfo.openFees)}</span>
+              </div>
+            )}
           </div>
-          <ProgressBar pct={n ? (paid / n) * 100 : 0} gold className="mt-3 h-2" />
+          <ProgressBar pct={potInfo.possible ? (potInfo.total / potInfo.possible) * 100 : 0} gold className="mt-3 h-2" />
+          {potInfo.openFees > 0 && <div className="mt-1.5 text-xs text-muted">Wenn alle bezahlt haben: {euro(potInfo.possible)}</div>}
         </section>
       </div>
 
@@ -369,6 +406,21 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
             >
               {name(queue[0].a)} <span className="text-muted">vs</span> {name(queue[0].b)}
             </button>
+            {canEdit && (
+              <div className="flex gap-2">
+                {[queue[0].a, queue[0].b].map((pid) => (
+                  <button
+                    key={pid}
+                    onClick={() => add180(pid, 1)}
+                    className="rounded-xl border border-gold/40 bg-gold/10 px-3 py-2 text-left text-xs font-bold text-gold transition hover:bg-gold/20 active:scale-95"
+                    title={`180 für ${name(pid)} – erhöht den Pot um ${euro(t.per180)}`}
+                  >
+                    +180
+                    <div className="max-w-[6rem] truncate font-medium text-white/80">{name(pid)}</div>
+                  </button>
+                ))}
+              </div>
+            )}
             {queue.length > 1 && (
               <div className="text-sm text-muted sm:max-w-xs sm:text-right">
                 <div className="text-[11px] font-semibold uppercase tracking-wider">Danach</div>
@@ -395,7 +447,7 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
 
       {/* ------------------------- Teilnehmer & Kasse ------------------------- */}
       {section === 'teilnehmer' && (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
           <Card>
             <CardTitle right={<span className={`text-xs ${n >= 8 && n <= 12 ? 'text-muted' : 'text-amber-300'}`}>{n} Teilnehmer · vorgesehen 8–12</span>}>
               <span className="flex items-center gap-2">
@@ -416,6 +468,10 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
                     <Plus size={16} /> Anmelden
                   </Btn>
                 </form>
+                <label className="flex items-center gap-2 text-xs text-muted">
+                  <input id="t-paid-on-add" type="checkbox" checked={paidOnAdd} onChange={(e) => setPaidOnAdd(e.target.checked)} className="h-4 w-4 accent-[#10b981]" />
+                  Beim Anmelden direkt als „bezahlt“ markieren ({euro(t.fee)} kommen sofort in den Pot)
+                </label>
                 {freeLeague.length > 0 && (
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className="text-xs text-muted">Aus der Liga:</span>
@@ -430,13 +486,27 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
             )}
             <ul>
               {t.participants.map((p, i) => (
-                <li key={p.id} className="flex items-center gap-3 border-t border-line/60 px-4 py-2.5 sm:px-5">
+                <li key={p.id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-line/60 px-4 py-2.5 sm:flex-nowrap sm:px-5">
                   <span className="w-5 text-xs text-muted">{i + 1}</span>
                   <span className="min-w-0 flex-1 truncate font-medium tablet:text-lg">
                     {p.name}
                     {tags.get(p.id) && <span className="ml-2 text-[10px] font-bold text-muted">Gruppe {tags.get(p.id)![0]}</span>}
                   </span>
-                  <span className="hidden text-[11px] text-muted sm:inline">Gebühr bezahlt</span>
+                  <div className="flex w-full items-center justify-end gap-3 pl-8 sm:w-auto sm:pl-0">
+                  {canEdit ? (
+                    <div className="mr-auto flex items-center gap-0.5 sm:mr-0" title="Geworfene 180er (erhöhen den Pot)">
+                      <button onClick={() => add180(p.id, -1)} disabled={!p.s180} className="rounded-md p-1 text-muted hover:text-white disabled:opacity-30" aria-label={`180 bei ${p.name} abziehen`}>
+                        <Minus size={13} />
+                      </button>
+                      <span className={`min-w-[3.2rem] text-center text-xs font-bold tabular-nums ${p.s180 ? 'text-gold' : 'text-muted'}`}>{p.s180 ?? 0}× 180</span>
+                      <button onClick={() => add180(p.id, 1)} className="rounded-md bg-gold/15 p-1 text-gold hover:bg-gold/25" aria-label={`180 für ${p.name}`}>
+                        <Plus size={13} />
+                      </button>
+                    </div>
+                  ) : (
+                    p.s180 > 0 && <span className="text-xs font-bold text-gold">{p.s180}× 180</span>
+                  )}
+                  <span className="hidden text-[11px] text-muted xl:inline">Gebühr bezahlt</span>
                   {canEdit ? (
                     <div className="inline-flex rounded-lg border border-line bg-panel2 p-0.5">
                       <button
@@ -460,6 +530,7 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
                       <Trash2 size={15} />
                     </button>
                   )}
+                  </div>
                 </li>
               ))}
               {n === 0 && <li className="px-5 pb-5 text-sm text-muted">Noch niemand angemeldet.</li>}
@@ -514,6 +585,23 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
                       onBlur={(e) => {
                         const v = Math.max(0, Math.round(parseFloat(e.target.value.replace(',', '.')) * 100) / 100 || 0);
                         if (v !== t.fee) upd((x) => void (x.fee = v), `Gebühr: ${euro(v)}`);
+                      }}
+                      className={`${input} mt-1`}
+                    />
+                  </label>
+                  <label className="text-xs text-muted">
+                    Pro 180 in den Pot (€)
+                    <input
+                      id="t-per180"
+                      key={t.per180}
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step={0.5}
+                      defaultValue={t.per180}
+                      onBlur={(e) => {
+                        const v = Math.max(0, Math.round(parseFloat(e.target.value.replace(',', '.')) * 100) / 100 || 0);
+                        if (v !== t.per180) upd((x) => void (x.per180 = v), `Pro 180: ${euro(v)}`);
                       }}
                       className={`${input} mt-1`}
                     />
@@ -606,7 +694,7 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
               </div>
             </Card>
           )}
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
             <div className="flex flex-col gap-4">
               {(['A', 'B'] as const).map((g) => (
                 <GroupTableCard key={g} g={g} rows={groupTable(t, g)} names={names} tags={tags} />
@@ -623,7 +711,7 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
                   <span>Spätester Einstieg: Spiel {stats.maxFirstWait + 1}</span>
                 </div>
               )}
-              <ol className="flex flex-col gap-1.5 px-3 pb-4 sm:px-4">
+              <ol className="flex flex-col gap-1 px-3 pb-4 sm:px-4">
                 {t.groupMatches.map((m, i) => {
                   const done = isPlayed(m);
                   const aWin = done && m.legsA! > m.legsB!;
@@ -634,13 +722,13 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
                       <button
                         onClick={() => openGroupMatch(m.id)}
                         disabled={!canEdit}
-                        className={`grid w-full grid-cols-[2rem_1.6rem_1fr_auto_1fr] items-center gap-2 rounded-xl border px-2.5 py-2 text-left transition tablet:py-3 ${
+                        className={`grid w-full grid-cols-[2rem_1.6rem_1fr_auto_1fr] items-center gap-3 rounded-xl border px-2.5 py-1.5 transition tablet:py-3 ${
                           now ? 'border-amber-400/60 bg-amber-400/5' : done ? 'border-line bg-panel2' : 'border-dashed border-line'
                         } ${canEdit ? 'hover:border-accent/60' : 'cursor-default'}`}
                       >
                         <span className="text-xs tabular-nums text-muted">{i + 1}.</span>
                         <span className={`rounded-md px-1 text-center text-[11px] font-bold ${m.group === 'A' ? 'bg-sky-400/15 text-sky-300' : 'bg-fuchsia-400/15 text-fuchsia-300'}`}>{m.group}</span>
-                        <span className={`truncate text-sm tablet:text-lg ${aWin ? 'font-bold' : done ? 'text-white/50' : ''}`}>{name(m.a)}</span>
+                        <span className={`truncate text-right text-sm tablet:text-lg ${aWin ? 'font-bold' : done ? 'text-white/50' : ''}`}>{name(m.a)}</span>
                         <span className="min-w-[54px] rounded-lg bg-bg px-2 py-0.5 text-center font-display font-bold tabular-nums">
                           {done ? (
                             <>
@@ -652,7 +740,7 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
                             <span className="text-muted">–:–</span>
                           )}
                         </span>
-                        <span className={`truncate text-right text-sm tablet:text-lg ${bWin ? 'font-bold' : done ? 'text-white/50' : ''}`}>{name(m.b)}</span>
+                        <span className={`truncate text-left text-sm tablet:text-lg ${bWin ? 'font-bold' : done ? 'text-white/50' : ''}`}>{name(m.b)}</span>
                       </button>
                     </li>
                   );

@@ -182,7 +182,7 @@ export default function AdminView() {
         </div>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Spieler */}
         <Card>
           <CardTitle right={<span className={`text-xs ${n >= 6 && n <= 16 ? 'text-muted' : 'text-amber-300'}`}>{n} Spieler · empfohlen 6–16</span>}>

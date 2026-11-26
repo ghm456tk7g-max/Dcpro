@@ -60,7 +60,7 @@ export default function SpecialsView({ day: dayNo, setDay }: { day: number; setD
         <MatchdayPicker value={dayNo} onChange={setDay} />
       </Card>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <Card>
           <CardTitle>Spieltag {dayNo}</CardTitle>
           <div className="hidden grid-cols-[1fr_auto_auto_auto] gap-4 px-5 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted sm:grid">
