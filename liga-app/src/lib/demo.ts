@@ -17,7 +17,7 @@ const SKILL = [0.68, 0.62, 0.58, 0.52, 0.5, 0.45, 0.4, 0.33];
 export function buildDemoState(): LeagueState {
   const rand = rng(1800);
   const state = emptyState();
-  state.settings = { seasonName: '2026', leagueLegs: 5, koLegs: 5 };
+  state.settings = { ...state.settings, seasonName: '2026', leagueLegs: 5, koLegs: 5 };
   const players: Player[] = NAMES.map((name) => ({ id: uid(), name, createdAt: new Date().toISOString() }));
   state.players = players;
   state.seasonStarted = true;
@@ -40,10 +40,9 @@ export function buildDemoState(): LeagueState {
     const day = state.matchdays[di];
     day.date = date;
     // Spieltag 2: Kalle fehlt -> Spielplan nur für 7 Spieler
-    if (di === 1) {
-      day.attendees = day.attendees.filter((id) => id !== players[7].id);
-      day.matches = buildMatches(day.attendees, []);
-    }
+    day.started = true;
+    day.attendees = players.map((p) => p.id).filter((id) => di === 0 || id !== players[7].id);
+    day.matches = buildMatches(day.attendees, []);
     let t = new Date(`${date}T19:30:00`).getTime();
     for (const m of day.matches) {
       const [la, lb] = play(m.a, m.b, 5);

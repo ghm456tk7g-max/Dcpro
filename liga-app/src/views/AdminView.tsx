@@ -40,12 +40,7 @@ export default function AdminView() {
     const id = uid();
     update((s) => {
       s.players.push({ id, name, createdAt: new Date().toISOString() });
-      // in alle noch nicht begonnenen Spieltage aufnehmen
-      for (const d of s.matchdays) {
-        if (d.matches.some(isPlayed)) continue;
-        d.attendees.push(id);
-        d.matches = buildMatches(d.attendees, d.matches);
-      }
+      // Anwesenheit wird pro Spieltag per Klick erfasst (Startgeld), daher nicht automatisch eintragen
     }, `${name} hinzugefügt`);
     setNewName('');
   };
@@ -85,7 +80,7 @@ export default function AdminView() {
     if (n < 2) return toast('Mindestens 2 Spieler anlegen', 'error');
     const ok = await confirm({
       title: 'Neue Saison starten?',
-      message: `Es werden 12 Spieltage für ${n} Spieler erzeugt (Jeder gegen Jeden, ${(n * (n - 1)) / 2} Spiele pro Abend).${
+      message: `Es werden 12 Spieltage angelegt. An jedem Spieltag wird per Klick erfasst, wer anwesend ist (Startgeld ${state.settings.dayFee} € pro Person), danach spielt Jeder gegen Jeden.${
         state.seasonStarted ? ' Alle Ergebnisse, K.O.-Phasen und Specials der laufenden Saison werden gelöscht!' : ''
       }`,
       confirmLabel: 'Saison starten',
@@ -292,6 +287,51 @@ export default function AdminView() {
                 </label>
               ))}
             </div>
+          </Card>
+
+          {/* Liga-Kasse */}
+          <Card className="p-4 sm:p-5">
+            <div className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-white/80">Liga-Kasse</div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {(
+                [
+                  ['dayFee', 'Startgeld pro Anwesendem (€)'],
+                  ['fee180', 'Pro 180 zahlt jeder Anwesende (€)'],
+                ] as const
+              ).map(([k, label]) => (
+                <label key={k} className="text-xs text-muted">
+                  {label}
+                  <input
+                    id={`set-${k}`}
+                    key={state.settings[k]}
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step={0.5}
+                    defaultValue={state.settings[k]}
+                    onBlur={(e) => {
+                      const v = Math.max(0, Math.round(parseFloat(e.target.value.replace(',', '.')) * 100) / 100 || 0);
+                      if (v !== state.settings[k]) update((s) => void (s.settings[k] = v), 'Kassen-Betrag gespeichert');
+                    }}
+                    className={`${input} mt-1`}
+                  />
+                </label>
+              ))}
+            </div>
+            <label className="mt-3 flex items-center gap-2 text-sm">
+              <input
+                id="set-throwerPays"
+                type="checkbox"
+                checked={state.settings.throwerPays180}
+                onChange={(e) => update((s) => void (s.settings.throwerPays180 = e.target.checked), 'Gespeichert')}
+                className="h-4 w-4 accent-[#10b981]"
+              />
+              Werfer der 180 zahlt selbst mit
+            </label>
+            <p className="mt-2 text-xs text-muted">
+              Beispiel mit {Math.max(2, n)} Anwesenden: Startgeld {Math.max(2, n) * state.settings.dayFee} €, jede 180 bringt{' '}
+              {(Math.max(2, n) - (state.settings.throwerPays180 ? 0 : 1)) * state.settings.fee180} €.
+            </p>
           </Card>
 
           {/* PIN */}

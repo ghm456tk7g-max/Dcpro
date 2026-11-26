@@ -13,6 +13,12 @@ export interface Settings {
   leagueLegs: number;
   /** K.O.-Spiele: First to N Legs */
   koLegs: number;
+  /** Liga-Kasse: Betrag pro anwesendem Spieler und Spieltag (€) */
+  dayFee: number;
+  /** Liga-Kasse: pro geworfener 180 zahlt jeder Anwesende diesen Betrag (€) */
+  fee180: number;
+  /** zahlt der Werfer der 180 selbst mit? */
+  throwerPays180: boolean;
 }
 
 export interface LeagueMatch {
@@ -44,6 +50,8 @@ export interface SpecialEntry {
 
 export interface Matchday {
   number: number;
+  /** gestartet = Anwesenheit wird erfasst, Startgeld läuft in die Kasse */
+  started: boolean;
   date: string | null;
   attendees: string[];
   matches: LeagueMatch[];
@@ -162,7 +170,7 @@ export interface LeagueState {
 
 export const emptyState = (): LeagueState => ({
   version: 1,
-  settings: { seasonName: '2026', leagueLegs: 5, koLegs: 5 },
+  settings: { seasonName: '2026', leagueLegs: 5, koLegs: 5, dayFee: 15, fee180: 5, throwerPays180: true },
   players: [],
   seasonStarted: false,
   matchdays: [],
@@ -191,6 +199,8 @@ export function normalizeState(raw: unknown): LeagueState {
     matchdays: Array.isArray(s.matchdays)
       ? s.matchdays.map((d) => ({
           number: d.number,
+          // ältere Stände: Spieltage mit Ergebnissen gelten als gestartet
+          started: d.started ?? (d.matches ?? []).some((m) => m.legsA !== null && m.legsB !== null),
           date: d.date ?? null,
           attendees: d.attendees ?? [],
           matches: d.matches ?? [],

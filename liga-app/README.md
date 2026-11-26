@@ -77,6 +77,14 @@ Ohne diese Werte läuft die App im lokalen Testmodus **ohne Login** (Daten nur i
 - **Als App installieren:** Seite im Browser öffnen → „Zum Home-Bildschirm hinzufügen“.
   Die PWA funktioniert erst im Produktions-Build (`npm run build && npm run preview` bzw. gehostet über HTTPS).
 
+## Liga-Kasse
+
+- Neue Spieltage starten leer: **„Spieltag starten“**, dann die Anwesenden antippen. Jeder Anwesende bringt
+  das Startgeld (Standard 15 €) in die Kasse, der Spielplan entsteht aus den Anwesenden.
+- Jede 180 (Reiter „Specials“) kostet jeden Anwesenden des Spieltags einen Betrag (Standard 5 €).
+  Optional zahlt der Werfer nicht mit. Ändert sich die Anwesenheit später, wird neu gerechnet.
+- Kasse pro Spieltag und Saison gesamt stehen beim Spieltag und bei den Specials. Beträge unter Admin → Liga-Kasse.
+
 ## Turnier-Modus (1 Board)
 
 - **Auslosung:** zufällig in 2 Gruppen (Größenunterschied max. 1). Die Board-Reihenfolge wird aus 400 zufälligen

@@ -83,7 +83,7 @@ export function LeagueProvider({ children }: { children: ReactNode }) {
 
   const toast = useCallback((text: string, kind: Toast['kind'] = 'ok') => {
     const id = Date.now() + Math.random();
-    setToasts((t) => [...t, { id, text, kind }]);
+    setToasts((t) => [...t, { id, text, kind }].slice(-3));
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3200);
   }, []);
 

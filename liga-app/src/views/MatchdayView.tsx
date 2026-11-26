@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { CalendarDays, Crown, Shuffle, RotateCcw, Swords, UserCheck, UserX, AlertTriangle } from 'lucide-react';
+import { CalendarDays, Crown, Play, Shuffle, Users, RotateCcw, Swords, UserCheck, UserX, AlertTriangle } from 'lucide-react';
 import { useLeague } from '../lib/league';
 import { shuffle } from '../lib/tournament';
 import { buildMatches, computeDay, computeOverall, formatDate, isPlayed, playedCount, pruneKoResults } from '../lib/logic';
 import { LeagueMatch } from '../lib/types';
 import ResultModal, { ResultTarget } from '../components/ResultModal';
 import SeasonProgress from '../components/SeasonProgress';
+import CashCard from '../components/CashCard';
+import { euro } from '../lib/tournament';
+import { dayCash } from '../lib/cash';
 import StandingsTable from '../components/StandingsTable';
 import { Btn, Card, CardTitle, EmptyState, MatchdayPicker, ProgressBar, usePlayerName } from '../components/ui';
 
@@ -38,6 +41,29 @@ export default function MatchdayView({ day: dayNo, setDay, goAdmin }: { day: num
   const rounds = [...new Set(day.matches.map((m) => m.round))].sort((a, b) => a - b);
   const idx = dayNo - 1;
 
+  const fee = state.settings.dayFee;
+
+  const startDay = () =>
+    update((s) => {
+      const d = s.matchdays[idx];
+      d.started = true;
+      d.attendees = [];
+      d.matches = [];
+      d.specials = {};
+      d.koResults = {};
+      d.winnerOverride = null;
+      if (!d.date) d.date = new Date().toISOString().slice(0, 10);
+    }, `Spieltag ${dayNo} gestartet – jetzt die Anwesenden antippen`);
+
+  const undoStart = () => update((s) => void (s.matchdays[idx].started = false), 'Start zurückgenommen');
+
+  const allPresent = () =>
+    update((s) => {
+      const d = s.matchdays[idx];
+      d.attendees = s.players.map((p) => p.id);
+      d.matches = buildMatches(d.attendees, d.matches);
+    }, `Alle anwesend · Kasse ${euro(dayCash({ ...day, attendees: state.players.map((p) => p.id) }, state.settings).total)}`);
+
   const toggleAttendance = async (pid: string) => {
     const present = day.attendees.includes(pid);
     if (present) {
@@ -61,7 +87,7 @@ export default function MatchdayView({ day: dayNo, setDay, goAdmin }: { day: num
       if (d.winnerOverride && !d.attendees.includes(d.winnerOverride)) d.winnerOverride = null;
       delete d.specials[pid];
       pruneKoResults(d, s.players);
-    });
+    }, present ? `${name(pid)} abwesend · Kasse −${euro(fee)}` : `${name(pid)} anwesend · Kasse +${euro(fee)}`);
   };
 
   const openMatch = (m: LeagueMatch) => {
@@ -150,10 +176,45 @@ export default function MatchdayView({ day: dayNo, setDay, goAdmin }: { day: num
         </div>
       </div>
 
+      {/* Spieltag noch nicht gestartet */}
+      {!day.started && (
+        <Card className="flex flex-col items-center gap-3 px-6 py-10 text-center">
+          <div className="rounded-2xl bg-accent/10 p-4 text-accent">
+            <Users size={30} />
+          </div>
+          <div className="font-display text-xl font-bold">Spieltag {dayNo} ist noch nicht gestartet</div>
+          <p className="max-w-md text-sm text-muted">
+            Beim Start tippt ihr an, wer da ist. Jeder Anwesende zahlt {euro(fee)} Startgeld in die Kasse, jede 180 kostet {euro(state.settings.fee180)} pro anwesender Person. Der Spielplan entsteht automatisch aus den Anwesenden.
+          </p>
+          {canEdit && (
+            <Btn variant="gold" onClick={startDay} className="px-6 py-3">
+              <Play size={16} /> Spieltag {dayNo} starten
+            </Btn>
+          )}
+        </Card>
+      )}
+
       {/* Anwesenheit */}
-      {canEdit && (
+      {canEdit && day.started && (
         <Card>
-          <CardTitle right={<span className="text-xs text-muted">Spielplan passt sich automatisch an</span>}>Anwesenheit</CardTitle>
+          <CardTitle
+            right={
+              <div className="flex items-center gap-2">
+                {day.attendees.length < state.players.length && (
+                  <button onClick={allPresent} className="rounded-lg border border-line px-2.5 py-1 text-xs font-semibold text-accent-light hover:border-accent/60">
+                    Alle anwesend
+                  </button>
+                )}
+                {day.attendees.length === 0 && (
+                  <button onClick={undoStart} className="rounded-lg border border-line px-2.5 py-1 text-xs text-muted hover:text-white">
+                    Start zurücknehmen
+                  </button>
+                )}
+              </div>
+            }
+          >
+            Anwesenheit · {day.attendees.length} × {euro(fee)}
+          </CardTitle>
           <div className="flex flex-wrap gap-2 px-4 pb-4 sm:px-5">
             {state.players.map((p) => {
               const on = day.attendees.includes(p.id);
@@ -167,7 +228,7 @@ export default function MatchdayView({ day: dayNo, setDay, goAdmin }: { day: num
                 >
                   {on ? <UserCheck size={16} className="text-accent" /> : <UserX size={16} />}
                   {p.name}
-                  <span className={`text-[10px] font-bold uppercase ${on ? 'text-accent-light' : 'text-muted'}`}>{on ? 'Anwesend' : 'Abwesend'}</span>
+                  <span className={`text-[10px] font-bold uppercase ${on ? 'text-accent-light' : 'text-muted'}`}>{on ? `Anwesend · ${euro(fee)}` : 'Abwesend'}</span>
                 </button>
               );
             })}
@@ -175,6 +236,7 @@ export default function MatchdayView({ day: dayNo, setDay, goAdmin }: { day: num
         </Card>
       )}
 
+      {day.started && (
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] tablet:xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.3fr)]">
         {/* Spiele */}
         <Card>
@@ -249,6 +311,7 @@ export default function MatchdayView({ day: dayNo, setDay, goAdmin }: { day: num
         </Card>
 
         <div className="flex flex-col gap-4">
+          <CashCard day={day} />
           {/* Tagessieg */}
           <Card className={res.winnerId ? 'border-gold/40' : ''}>
             <div className="flex items-center gap-4 p-4 sm:p-5">
@@ -305,6 +368,7 @@ export default function MatchdayView({ day: dayNo, setDay, goAdmin }: { day: num
           </Card>
         </div>
       </div>
+      )}
 
       <ResultModal target={target} onClose={() => setTarget(null)} />
     </div>

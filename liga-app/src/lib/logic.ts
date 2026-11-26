@@ -53,13 +53,14 @@ export function buildMatches(attendees: string[], existing: LeagueMatch[]): Leag
   });
 }
 
-export function createSeason(players: Player[]): Matchday[] {
-  const ids = players.map((p) => p.id);
+/** Neue Saison: Spieltage starten leer, Anwesenheit wird am Abend per Klick erfasst */
+export function createSeason(_players: Player[]): Matchday[] {
   return Array.from({ length: MATCHDAY_COUNT }, (_, i) => ({
     number: i + 1,
+    started: false,
     date: null,
-    attendees: [...ids],
-    matches: buildMatches(ids, []),
+    attendees: [],
+    matches: [],
     winnerOverride: null,
     koResults: {},
     specials: {},

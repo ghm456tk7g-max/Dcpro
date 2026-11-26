@@ -2,6 +2,9 @@ import { Flame, Minus, Plus, Target } from 'lucide-react';
 import { useLeague } from '../lib/league';
 import { SpecialEntry } from '../lib/types';
 import { Card, CardTitle, EmptyState, MatchdayPicker, PlayerLink } from '../components/ui';
+import CashCard from '../components/CashCard';
+import { dayCash } from '../lib/cash';
+import { euro } from '../lib/tournament';
 
 const empty: SpecialEntry = { s180: 0, hf: 0, bestFinish: 0 };
 
@@ -28,11 +31,23 @@ export default function SpecialsView({ day: dayNo, setDay }: { day: number; setD
   if (!state.seasonStarted || !day)
     return <EmptyState icon={<Flame size={30} />} title="Keine Saison aktiv" text="Hier zählt ihr 180er und High-Finishes (100+) aus Scolia mit." />;
 
-  const set = (pid: string, patch: Partial<SpecialEntry>) =>
-    update((s) => {
-      const d = s.matchdays[idx];
-      d.specials[pid] = { ...empty, ...d.specials[pid], ...patch };
-    });
+  const pname = (id: string) => state.players.find((p) => p.id === id)?.name ?? '';
+  const per180 = dayCash(day, state.settings).per180;
+  const set = (pid: string, patch: Partial<SpecialEntry>) => {
+    const before = day.specials[pid]?.s180 ?? 0;
+    const diff = patch.s180 !== undefined ? patch.s180 - before : 0;
+    update(
+      (s) => {
+        const d = s.matchdays[idx];
+        d.specials[pid] = { ...empty, ...d.specials[pid], ...patch };
+      },
+      diff > 0
+        ? `180! ${pname(pid)} · Kasse +${euro(per180)} (${day.attendees.length - (state.settings.throwerPays180 ? 0 : 1)} × ${euro(state.settings.fee180)})`
+        : diff < 0
+          ? `180 bei ${pname(pid)} zurückgenommen · Kasse −${euro(per180)}`
+          : undefined,
+    );
+  };
 
   const totals = state.players
     .map((p) => {
@@ -59,6 +74,9 @@ export default function SpecialsView({ day: dayNo, setDay }: { day: number; setD
       <Card className="p-3 sm:p-4">
         <MatchdayPicker value={dayNo} onChange={setDay} />
       </Card>
+
+      <CashCard day={day} compact />
+      {!day.started && <Card className="p-4 text-sm text-muted">Spieltag {dayNo} ist noch nicht gestartet. 180er können erst gezählt werden, wenn unter „Spieltag“ die Anwesenden eingetragen sind.</Card>}
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <Card>
