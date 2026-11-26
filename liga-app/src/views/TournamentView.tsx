@@ -18,6 +18,8 @@ import {
   reshuffleGroupOrder,
   scheduleStats,
   total180,
+  tAmountPer180,
+  tPayersPer180,
   tNames,
 } from '../lib/tournament';
 import { defaultTournament, GroupKey, Tournament, uid } from '../lib/types';
@@ -120,7 +122,9 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
   };
 
   const n = t.participants.length;
-  const potInfo = potBreakdown(t);
+  const potInfo = potBreakdown(t, state.settings);
+  const amount180 = tAmountPer180(t, state.settings);
+  const payers180 = tPayersPer180(t, state.settings);
   const season = seasonCash(state);
   /** Aktueller Pot = alle Liga-Spieltage (Startgeld + 180er) + Turnier */
   const pot = potLedger(state).total;
@@ -183,7 +187,7 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
         const p = x.participants.find((y) => y.id === id)!;
         p.s180 = Math.max(0, (p.s180 ?? 0) + delta);
       },
-      delta > 0 ? `180! ${name(id)} · Pot +${euro(t.per180)}` : `180 bei ${name(id)} zurückgenommen`,
+      delta > 0 ? `180! ${name(id)} · Pot +${euro(amount180)} (${payers180} × ${euro(state.settings.fee180)})` : `180 bei ${name(id)} zurückgenommen · Pot −${euro(amount180)}`,
     );
   };
 
@@ -382,7 +386,7 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
             </div>
             <div className="flex justify-between gap-3">
               <span className="text-muted">
-                Turnier-180er · {total180(t)} × {euro(t.per180)}
+                Turnier-180er · {total180(t)} × {euro(amount180)}
               </span>
               <span className="font-semibold tabular-nums">{euro(potInfo.bonus)}</span>
             </div>
@@ -428,7 +432,7 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
                     key={pid}
                     onClick={() => add180(pid, 1)}
                     className="rounded-xl border border-gold/40 bg-gold/10 px-3 py-2 text-left text-xs font-bold text-gold transition hover:bg-gold/20 active:scale-95"
-                    title={`180 für ${name(pid)} – erhöht den Pot um ${euro(t.per180)}`}
+                    title={`180 für ${name(pid)} – erhöht den Pot um ${euro(amount180)}`}
                   >
                     +180
                     <div className="max-w-[6rem] truncate font-medium text-white/80">{name(pid)}</div>
@@ -604,23 +608,13 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
                       className={`${input} mt-1`}
                     />
                   </label>
-                  <label className="text-xs text-muted">
-                    Pro 180 in den Pot (€)
-                    <input
-                      id="t-per180"
-                      key={t.per180}
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      step={0.5}
-                      defaultValue={t.per180}
-                      onBlur={(e) => {
-                        const v = Math.max(0, Math.round(parseFloat(e.target.value.replace(',', '.')) * 100) / 100 || 0);
-                        if (v !== t.per180) upd((x) => void (x.per180 = v), `Pro 180: ${euro(v)}`);
-                      }}
-                      className={`${input} mt-1`}
-                    />
-                  </label>
+                  <div className="text-xs text-muted">
+                    Pro 180
+                    <div className="mt-1 rounded-xl border border-line bg-panel2 px-3 py-2.5 text-sm text-white">
+                      {payers180} × {euro(state.settings.fee180)} = <span className="font-semibold text-gold">{euro(amount180)}</span>
+                    </div>
+                    <div className="mt-1 text-[11px]">jeder Teilnehmer zahlt {euro(state.settings.fee180)} · änderbar unter Admin → Liga-Kasse</div>
+                  </div>
                   <label className="text-xs text-muted">
                     Spielmodus
                     <input

@@ -1,5 +1,5 @@
 import { accumulate, emptyRow, isPlayed, roundRobin, seedPositions, sortRows, StatRow } from './logic';
-import { GroupKey, TGroupMatch, TResult, Tournament, uid } from './types';
+import { GroupKey, Settings, TGroupMatch, TResult, Tournament, uid } from './types';
 
 /** Punkte pro Sieg in der Gruppenphase */
 export const GROUP_WIN_POINTS = 2;
@@ -471,14 +471,19 @@ export const paidCount = (t: Tournament) => t.participants.filter((p) => p.paid)
 export const total180 = (t: Tournament) => t.participants.reduce((sum, p) => sum + (p.s180 ?? 0), 0);
 const num = (v: number) => (Number.isFinite(v) ? v : 0);
 
-/** Pot = bezahlte Gebühren + 180er-Einzahlungen */
-export function potBreakdown(t: Tournament) {
+/** Wie viele Personen für eine 180 im Turnier zahlen (gleiche Regel wie am Spieltag) */
+export const tPayersPer180 = (t: Tournament, s: Settings) => Math.max(0, t.participants.length - (s.throwerPays180 ? 0 : 1));
+/** Betrag, den eine 180 im Turnier in den Pot bringt: Teilnehmer × Betrag pro Person */
+export const tAmountPer180 = (t: Tournament, s: Settings) => tPayersPer180(t, s) * num(s.fee180);
+
+/** Turnier-Pot = bezahlte Gebühren + 180er (jeder Teilnehmer zahlt pro 180) */
+export function potBreakdown(t: Tournament, s: Settings) {
   const fees = paidCount(t) * num(t.fee);
-  const bonus = total180(t) * num(t.per180);
+  const bonus = total180(t) * tAmountPer180(t, s);
   const openFees = (t.participants.length - paidCount(t)) * num(t.fee);
   return { fees, bonus, total: fees + bonus, openFees, possible: fees + bonus + openFees };
 }
-export const currentPot = (t: Tournament) => potBreakdown(t).total;
+export const currentPot = (t: Tournament, s: Settings) => potBreakdown(t, s).total;
 export const euro = (v: number) =>
   v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: v % 1 ? 2 : 0 });
 

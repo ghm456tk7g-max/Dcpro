@@ -296,7 +296,7 @@ export default function AdminView() {
               {(
                 [
                   ['dayFee', 'Startgeld pro Anwesendem (€)'],
-                  ['fee180', 'Pro 180 zahlt jeder Anwesende (€)'],
+                  ['fee180', 'Pro 180 zahlt jede Person (€) – Liga & Turnier'],
                 ] as const
               ).map(([k, label]) => (
                 <label key={k} className="text-xs text-muted">

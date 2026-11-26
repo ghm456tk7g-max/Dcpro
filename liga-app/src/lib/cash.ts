@@ -1,4 +1,5 @@
 import { LeagueState, Matchday, Settings } from './types';
+import { tAmountPer180, tPayersPer180 } from './tournament';
 
 /** 180er eines Spieltags (nur Anwesende) */
 export const day180s = (d: Matchday) => d.attendees.reduce((sum, id) => sum + (d.specials[id]?.s180 ?? 0), 0);
@@ -96,8 +97,8 @@ export function potLedger(state: LeagueState): { groups: LedgerGroup[]; total: n
       key: `t-180-${p.id}`,
       kind: '180',
       label: `180 von ${p.name}${p.s180 > 1 ? ` (${p.s180}×)` : ''}`,
-      detail: `${p.s180} × ${eur(t.per180)}`,
-      amount: p.s180 * t.per180,
+      detail: `${p.s180 > 1 ? `${p.s180} × ` : ''}${tPayersPer180(t, s)} Personen × ${eur(s.fee180)}`,
+      amount: p.s180 * tAmountPer180(t, s),
     });
   }
   const tournament = tLines.reduce((sum, l) => sum + l.amount, 0);

@@ -100,8 +100,6 @@ export interface Tournament {
   date: string;
   /** Teilnahmegebühr in Euro */
   fee: number;
-  /** Betrag in Euro, der pro geworfener 180 in den Pot kommt */
-  per180: number;
   /** Anzeige, z. B. "301 Single Out" */
   mode: string;
   /** First to N (2 = Best of 3) */
@@ -133,7 +131,6 @@ export const defaultTournament = (): Tournament => ({
   name: 'Steeldart-Turnier',
   date: new Date().toISOString().slice(0, 10),
   fee: 10,
-  per180: 1,
   mode: '301 Single Out',
   groupLegs: 2,
   koLegs: 2,

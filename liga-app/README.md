@@ -102,7 +102,8 @@ Ohne diese Werte läuft die App im lokalen Testmodus **ohne Login** (Daten nur i
 - **Zufallsgenerator:** In der Gruppenphase „Reihenfolge neu mischen“ (Gruppen und gespielte Partien bleiben,
   offene Partien werden neu gewürfelt) oder „Gruppen neu auslosen“. Am Liga-Spieltag würfelt „Partien mischen“
   Paarungen und Reihenfolge neu, eingetragene Ergebnisse bleiben erhalten.
-- **Kasse:** Pot = Anzahl „bezahlt: Ja“ × Teilnahmegebühr + Anzahl 180er × Betrag pro 180 (Standard 1 €), live.
+- **Kasse:** Turnier-Pot = Anzahl „bezahlt: Ja“ × Teilnahmegebühr + jede 180 × (Teilnehmer × Betrag pro Person,
+  Standard 5 €, gleiche Regel wie in der Liga), live.
   Neue Teilnehmer können direkt als bezahlt angemeldet werden. 180er zählt man in der Teilnehmerliste
   oder mit „+180“ direkt bei „Jetzt am Board“. Die Pot-Karte zeigt auch, was noch offen ist.
 
