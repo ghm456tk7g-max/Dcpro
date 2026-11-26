@@ -15,6 +15,7 @@ import {
   paidCount,
   pruneDE,
   QueueItem,
+  reshuffleGroupOrder,
   scheduleStats,
   tNames,
 } from '../lib/tournament';
@@ -104,6 +105,15 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
   const [section, setSection] = useState<Section>(() => (!t.groups ? 'teilnehmer' : groupDone ? 'ko' : 'gruppen'));
   const [target, setTarget] = useState<ResultTarget | null>(null);
   const [newName, setNewName] = useState('');
+  const [rolling, setRolling] = useState(false);
+  /** kurze Würfel-Animation, dann mischen */
+  const roll = (fn: () => void) => {
+    setRolling(true);
+    setTimeout(() => {
+      fn();
+      setRolling(false);
+    }, 650);
+  };
 
   const n = t.participants.length;
   const pot = currentPot(t);
@@ -171,14 +181,25 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
       }))
     )
       return;
-    const { groups, groupMatches } = createGroupPhase(t.participants.map((p) => p.id));
-    upd((x) => {
-      x.groups = groups;
-      x.groupMatches = groupMatches;
-      x.koResults = {};
-      x.hofEntryId = null;
-    }, 'Spielplan ausgelost');
-    setSection('gruppen');
+    roll(() => {
+      const { groups, groupMatches } = createGroupPhase(t.participants.map((p) => p.id));
+      upd((x) => {
+        x.groups = groups;
+        x.groupMatches = groupMatches;
+        x.koResults = {};
+        x.hofEntryId = null;
+      }, 'Gruppen und Spielplan neu ausgelost');
+      setSection('gruppen');
+    });
+  };
+
+  const reshuffle = () => {
+    if (groupDone) return;
+    roll(() =>
+      upd((x) => {
+        x.groupMatches = reshuffleGroupOrder(x);
+      }, groupPlayed ? 'Offene Partien neu gemischt' : 'Reihenfolge neu gemischt'),
+    );
   };
 
   const newTournament = async () => {
@@ -455,7 +476,7 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
                   Lost die Teilnehmer zufällig in 2 ausgeglichene Gruppen und erstellt die Board-Reihenfolge: abwechselnd Gruppe A und B, niemand zweimal hintereinander, Pausen gleichmäßig verteilt.
                 </p>
                 <Btn variant="gold" onClick={draw} disabled={n < 4} className="w-full py-3">
-                  <Shuffle size={16} /> {t.groups ? 'Spielplan neu mischen' : 'Spielplan auslosen'}
+                  <Shuffle size={16} className={rolling ? 'animate-spin' : ''} /> {t.groups ? 'Spielplan neu mischen' : 'Spielplan auslosen'}
                 </Btn>
                 {(n < 8 || n > 12) && n >= 4 && <p className="mt-2 text-xs text-amber-300">Hinweis: Das Format ist für 8–12 Spieler gedacht, funktioniert aber auch mit {n}.</p>}
               </Card>
@@ -557,6 +578,34 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
         (!t.groups ? (
           <Card className="px-6 py-10 text-center text-sm text-muted">Noch nicht ausgelost. Unter „Teilnehmer &amp; Kasse“ den Spielplan auslosen.</Card>
         ) : (
+          <div className="flex flex-col gap-4">
+          {canEdit && (
+            <Card className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:p-5">
+              <div className="flex items-center gap-3 sm:flex-1">
+                <div className={`rounded-2xl bg-accent/10 p-3 text-accent transition ${rolling ? 'animate-bounce' : ''}`}>
+                  <Dices size={26} className={rolling ? 'animate-spin' : ''} />
+                </div>
+                <div>
+                  <div className="font-display text-lg font-bold">{rolling ? 'Wird gemischt …' : 'Zufallsgenerator'}</div>
+                  <div className="text-sm text-muted">
+                    {groupDone
+                      ? 'Gruppenphase ist durchgespielt. Neu auslosen würde alle Ergebnisse löschen.'
+                      : groupPlayed
+                        ? `Gruppen und ${groupPlayed} gespielte ${groupPlayed === 1 ? 'Partie bleiben' : 'Partien bleiben'}, die ${t.groupMatches.length - groupPlayed} offenen werden neu gemischt.`
+                        : 'Partien per Knopfdruck neu würfeln – niemand spielt dabei zweimal hintereinander.'}
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Btn onClick={reshuffle} disabled={rolling || groupDone}>
+                  <Shuffle size={16} /> Reihenfolge neu mischen
+                </Btn>
+                <Btn variant="ghost" onClick={draw} disabled={rolling}>
+                  <Dices size={16} /> Gruppen neu auslosen
+                </Btn>
+              </div>
+            </Card>
+          )}
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
             <div className="flex flex-col gap-4">
               {(['A', 'B'] as const).map((g) => (
@@ -610,6 +659,7 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
                 })}
               </ol>
             </Card>
+          </div>
           </div>
         ))}
 

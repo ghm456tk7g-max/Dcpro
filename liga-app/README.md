@@ -89,6 +89,9 @@ Ohne diese Werte läuft die App im lokalen Testmodus **ohne Login** (Daten nur i
   Finale Winners- gegen Losers-Sieger, optional Reset-Finale. „Jetzt am Board“ wählt das nächste Spiel mit
   Vorausschau so, dass möglichst niemand direkt hintereinander spielt. Nur am Ende, wenn nur noch ein Spiel offen ist,
   lässt sich das nicht immer vermeiden.
+- **Zufallsgenerator:** In der Gruppenphase „Reihenfolge neu mischen“ (Gruppen und gespielte Partien bleiben,
+  offene Partien werden neu gewürfelt) oder „Gruppen neu auslosen“. Am Liga-Spieltag würfelt „Partien mischen“
+  Paarungen und Reihenfolge neu, eingetragene Ergebnisse bleiben erhalten.
 - **Kasse:** Pot = Anzahl „bezahlt: Ja“ × Teilnahmegebühr, live.
 
 ## Regeln (in der App umgesetzt)

@@ -67,19 +67,26 @@ export function scheduleStats(seq: { a: string; b: string }[]): ScheduleStats {
 }
 
 /** Ein Versuch: gierig, Gruppen im Verhältnis ihrer Spielanzahl abwechselnd, wer am längsten wartet, spielt zuerst */
-function buildOnce(pool: Record<GroupKey, Pairing[]>, rand: () => number): Pairing[] {
-  const left: Record<GroupKey, Pairing[]> = { A: shuffle(pool.A, rand), B: shuffle(pool.B, rand) };
+function buildOnce<P extends Pairing>(pool: Record<GroupKey, P[]>, rand: () => number, prefix: Pairing[] = []): P[] {
+  const left: Record<GroupKey, P[]> = { A: shuffle(pool.A, rand), B: shuffle(pool.B, rand) };
   const total = { A: pool.A.length, B: pool.B.length };
   const done = { A: 0, B: 0 };
   const last = new Map<string, number>();
   const count = new Map<string, number>();
-  const seq: Pairing[] = [];
+  // bereits gespielte Partien: wer zuletzt dran war, soll nicht gleich wieder ran
+  prefix.forEach((m, i) => {
+    for (const p of [m.a, m.b]) {
+      last.set(p, i - prefix.length);
+      count.set(p, (count.get(p) ?? 0) + 1);
+    }
+  });
+  const seq: P[] = [];
   const n = total.A + total.B;
 
   for (let step = 0; step < n; step++) {
     // Gruppe, die "an der Reihe" ist (gleichmäßig verteilt, bei gleicher Größe strikt abwechselnd)
     const due = (g: GroupKey) => (left[g].length ? (done[g] + 0.5) / total[g] : Infinity);
-    const prev = seq[seq.length - 1];
+    const prev = seq[seq.length - 1] ?? prefix[prefix.length - 1];
     let order: GroupKey[] = due('A') < due('B') ? ['A', 'B'] : due('B') < due('A') ? ['B', 'A'] : prev?.group === 'A' ? ['B', 'A'] : ['A', 'B'];
     order = order.filter((g) => left[g].length);
 
@@ -94,7 +101,7 @@ function buildOnce(pool: Record<GroupKey, Pairing[]>, rand: () => number): Pairi
       return s + rand() * 0.5;
     };
 
-    let pick: { g: GroupKey; i: number; s: number } | null = null;
+    let pick = null as { g: GroupKey; i: number; s: number } | null;
     for (const g of order) {
       left[g].forEach((m, i) => {
         const s = score(m) - (g === order[0] ? 0 : 400); // eigentlich fällige Gruppe bevorzugen
@@ -123,11 +130,15 @@ export function optimizeGroupOrder(groups: Record<GroupKey, string[]>, attempts 
     A: roundRobin(groups.A).map(({ a, b }) => ({ group: 'A' as const, a, b })),
     B: roundRobin(groups.B).map(({ a, b }) => ({ group: 'B' as const, a, b })),
   };
-  let best: Pairing[] = [];
+  return optimizePool(pool, [], attempts, rand);
+}
+
+function optimizePool<P extends Pairing>(pool: Record<GroupKey, P[]>, prefix: Pairing[], attempts: number, rand: () => number): P[] {
+  let best: P[] = [];
   let bestScore = Infinity;
   for (let k = 0; k < attempts; k++) {
-    const seq = buildOnce(pool, rand);
-    const st = scheduleStats(seq);
+    const seq = buildOnce(pool, rand, prefix);
+    const st = scheduleStats([...prefix, ...seq]);
     const sc = st.backToBack * 10000 + st.maxGap * 100 + st.maxFirstWait * 20 + st.spread * 10;
     if (sc < bestScore) {
       bestScore = sc;
@@ -149,6 +160,19 @@ export function createGroupPhase(ids: string[], rand = Math.random) {
     playedAt: null,
   }));
   return { groups, groupMatches };
+}
+
+/**
+ * Zufallsgenerator "Reihenfolge neu mischen": Gruppen und bereits gespielte Partien bleiben,
+ * die offenen Partien bekommen eine neue, wieder optimierte Reihenfolge.
+ */
+export function reshuffleGroupOrder(t: Tournament, rand = Math.random): TGroupMatch[] {
+  const played = t.groupMatches
+    .filter(isPlayed)
+    .sort((x, y) => ((x.playedAt ?? '') < (y.playedAt ?? '') ? -1 : 1));
+  const open = t.groupMatches.filter((m) => !isPlayed(m));
+  const pool = { A: open.filter((m) => m.group === 'A'), B: open.filter((m) => m.group === 'B') };
+  return [...played, ...optimizePool(pool, played, 400, rand)];
 }
 
 /* ================================================================== */

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { CalendarDays, Crown, RotateCcw, Swords, UserCheck, UserX, AlertTriangle } from 'lucide-react';
+import { CalendarDays, Crown, Shuffle, RotateCcw, Swords, UserCheck, UserX, AlertTriangle } from 'lucide-react';
 import { useLeague } from '../lib/league';
+import { shuffle } from '../lib/tournament';
 import { buildMatches, computeDay, computeOverall, formatDate, isPlayed, playedCount, pruneKoResults } from '../lib/logic';
 import { LeagueMatch } from '../lib/types';
 import ResultModal, { ResultTarget } from '../components/ResultModal';
@@ -12,6 +13,7 @@ export default function MatchdayView({ day: dayNo, setDay, goAdmin }: { day: num
   const { state, canEdit, update, confirm, openProfile, isAdmin } = useLeague();
   const name = usePlayerName();
   const [target, setTarget] = useState<ResultTarget | null>(null);
+  const [rolling, setRolling] = useState(false);
   const day = state.matchdays[dayNo - 1];
 
   if (!state.seasonStarted || !day) {
@@ -92,6 +94,17 @@ export default function MatchdayView({ day: dayNo, setDay, goAdmin }: { day: num
     });
   };
 
+  const shuffleMatches = () => {
+    setRolling(true);
+    setTimeout(() => {
+      update((s) => {
+        const d = s.matchdays[idx];
+        d.matches = buildMatches(shuffle(d.attendees), d.matches);
+      }, played ? 'Partien neu gemischt (Ergebnisse bleiben erhalten)' : 'Partien neu gemischt');
+      setRolling(false);
+    }, 600);
+  };
+
   const setOverride = (pid: string | null) =>
     update((s) => {
       const d = s.matchdays[idx];
@@ -165,7 +178,24 @@ export default function MatchdayView({ day: dayNo, setDay, goAdmin }: { day: num
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] tablet:xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.3fr)]">
         {/* Spiele */}
         <Card>
-          <CardTitle right={<span className="text-xs text-muted">First to {legs}</span>}>Ligaspiele · Jeder gegen Jeden</CardTitle>
+          <CardTitle
+            right={
+              canEdit && day.attendees.length > 2 && !res.complete ? (
+                <button
+                  onClick={shuffleMatches}
+                  disabled={rolling}
+                  className="flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-accent-light transition hover:border-accent/60"
+                  title="Paarungen und Reihenfolge zufällig neu würfeln"
+                >
+                  <Shuffle size={14} className={rolling ? 'animate-spin' : ''} /> {rolling ? 'Mische …' : 'Partien mischen'}
+                </button>
+              ) : (
+                <span className="text-xs text-muted">First to {legs}</span>
+              )
+            }
+          >
+            Ligaspiele · Jeder gegen Jeden
+          </CardTitle>
           {day.attendees.length < 2 ? (
             <p className="px-5 pb-5 text-sm text-muted">Mindestens 2 anwesende Spieler nötig.</p>
           ) : (
