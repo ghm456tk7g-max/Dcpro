@@ -2,7 +2,8 @@ import { ChangeEvent, useState } from 'react';
 import { Award, Check, Crown, Pencil, Plus, Trash2, Trophy, X } from 'lucide-react';
 import { useLeague } from '../lib/league';
 import { formatDate } from '../lib/logic';
-import { computeDE, currentPot, euro, tNames } from '../lib/tournament';
+import { computeDE, euro, tNames } from '../lib/tournament';
+import { potLedger } from '../lib/cash';
 import { HallOfFameEntry, uid } from '../lib/types';
 import { Btn, Card, CardTitle } from '../components/ui';
 
@@ -132,7 +133,7 @@ export default function HallOfFameView({ goTournament }: { goTournament(): void 
       {pending && (
         <Card className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <div className="text-sm">
-            <span className="font-semibold text-gold">{pending}</span> hat „{t.name}“ gewonnen ({euro(currentPot(t))} Pot) und ist noch nicht eingetragen.
+            <span className="font-semibold text-gold">{pending}</span> hat „{t.name}“ gewonnen ({euro(potLedger(state).total)} Pot) und ist noch nicht eingetragen.
           </div>
           <Btn variant="gold" onClick={goTournament}>
             <Award size={16} /> Zum Turnier

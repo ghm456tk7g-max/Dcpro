@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { Coins } from 'lucide-react';
+import PotLedger from './PotLedger';
 import { useLeague } from '../lib/league';
-import { dayCash, seasonCash } from '../lib/cash';
+import { dayCash, potLedger, seasonCash } from '../lib/cash';
 import { euro } from '../lib/tournament';
 import { Matchday } from '../lib/types';
 
@@ -10,6 +12,8 @@ export default function CashCard({ day, compact = false }: { day: Matchday; comp
   const s = state.settings;
   const c = dayCash(day, s);
   const season = seasonCash(state);
+  const pot = potLedger(state).total;
+  const [open, setOpen] = useState(false);
   return (
     <section className="rounded-2xl border border-gold/40 bg-gradient-to-br from-gold/15 via-panel to-panel p-4 shadow-gold sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -19,11 +23,11 @@ export default function CashCard({ day, compact = false }: { day: Matchday; comp
           </div>
           <div className={`mt-1 font-display font-extrabold tabular-nums text-gold ${compact ? 'text-3xl' : 'text-4xl tablet:text-5xl'}`}>{euro(c.total)}</div>
         </div>
-        <div className="text-right">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted">Saison gesamt</div>
-          <div className="font-display text-xl font-bold tabular-nums">{euro(season.total)}</div>
-          <div className="text-[11px] text-muted">{season.days} Spieltage</div>
-        </div>
+        <button onClick={() => setOpen(true)} className="rounded-xl border border-gold/30 px-3 py-2 text-right transition hover:bg-gold/10" title="Alle Einzahlungen anzeigen">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted">Aktueller Pot</div>
+          <div className="font-display text-xl font-bold tabular-nums text-gold">{euro(pot)}</div>
+          <div className="text-[11px] text-muted">{season.days} Spieltage · Details</div>
+        </button>
       </div>
       {day.started ? (
         <div className="mt-3 space-y-1 text-sm">
@@ -47,6 +51,7 @@ export default function CashCard({ day, compact = false }: { day: Matchday; comp
       ) : (
         <p className="mt-2 text-sm text-muted">Spieltag noch nicht gestartet – die Kasse füllt sich, sobald Spieler auf „Anwesend“ gesetzt werden.</p>
       )}
+      <PotLedger open={open} onClose={() => setOpen(false)} />
     </section>
   );
 }

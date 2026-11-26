@@ -6,7 +6,6 @@ import {
   boardQueue,
   computeDE,
   createGroupPhase,
-  currentPot,
   potBreakdown,
   DEMatchView,
   deLabel,
@@ -23,6 +22,8 @@ import {
 } from '../lib/tournament';
 import { defaultTournament, GroupKey, Tournament, uid } from '../lib/types';
 import DoubleElim from '../components/DoubleElim';
+import PotLedger from '../components/PotLedger';
+import { potLedger, seasonCash } from '../lib/cash';
 import ResultModal, { ResultTarget } from '../components/ResultModal';
 import { Btn, Card, CardTitle, ProgressBar, Segmented } from '../components/ui';
 
@@ -119,8 +120,11 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
   };
 
   const n = t.participants.length;
-  const pot = currentPot(t);
   const potInfo = potBreakdown(t);
+  const season = seasonCash(state);
+  /** Aktueller Pot = alle Liga-Spieltage (Startgeld + 180er) + Turnier */
+  const pot = potLedger(state).total;
+  const [ledgerOpen, setLedgerOpen] = useState(false);
   const paid = paidCount(t);
   const groupPlayed = t.groupMatches.filter(isPlayed).length;
   const hasResults = groupPlayed > 0 || Object.keys(t.koResults).length > 0;
@@ -169,7 +173,7 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
   const setPaid = (id: string, v: boolean) =>
     upd((x) => {
       x.participants.find((p) => p.id === id)!.paid = v;
-    }, `${name(id)}: Gebühr ${v ? 'bezahlt' : 'offen'} · Pot ${euro(currentPot({ ...t, participants: t.participants.map((p) => (p.id === id ? { ...p, paid: v } : p)) }))}`);
+    }, `${name(id)}: Gebühr ${v ? `bezahlt · Pot +${euro(t.fee)}` : `offen · Pot −${euro(t.fee)}`}`);
 
   const add180 = (id: string, delta: number) => {
     const cur = t.participants.find((p) => p.id === id)?.s180 ?? 0;
@@ -363,14 +367,22 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
           <div className="mt-1 font-display text-5xl font-extrabold tabular-nums text-gold tablet:text-6xl">{euro(pot)}</div>
           <div className="mt-3 space-y-1 text-sm">
             <div className="flex justify-between gap-3">
+              <span className="text-muted">Liga-Startgeld · {season.days} Spieltage</span>
+              <span className="font-semibold tabular-nums">{euro(season.fees)}</span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-muted">Liga-180er · {season.count180}×</span>
+              <span className="font-semibold tabular-nums">{euro(season.bonus)}</span>
+            </div>
+            <div className="flex justify-between gap-3">
               <span className="text-muted">
-                Gebühren · {paid} von {n} × {euro(t.fee)}
+                Turnier-Startgeld · {paid} von {n} × {euro(t.fee)}
               </span>
               <span className="font-semibold tabular-nums">{euro(potInfo.fees)}</span>
             </div>
             <div className="flex justify-between gap-3">
               <span className="text-muted">
-                180er · {total180(t)} × {euro(t.per180)}
+                Turnier-180er · {total180(t)} × {euro(t.per180)}
               </span>
               <span className="font-semibold tabular-nums">{euro(potInfo.bonus)}</span>
             </div>
@@ -381,8 +393,11 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
               </div>
             )}
           </div>
-          <ProgressBar pct={potInfo.possible ? (potInfo.total / potInfo.possible) * 100 : 0} gold className="mt-3 h-2" />
-          {potInfo.openFees > 0 && <div className="mt-1.5 text-xs text-muted">Wenn alle bezahlt haben: {euro(potInfo.possible)}</div>}
+          <ProgressBar pct={pot + potInfo.openFees ? (pot / (pot + potInfo.openFees)) * 100 : 0} gold className="mt-3 h-2" />
+          {potInfo.openFees > 0 && <div className="mt-1.5 text-xs text-muted">Wenn alle Turnier-Gebühren bezahlt sind: {euro(pot + potInfo.openFees)}</div>}
+          <button onClick={() => setLedgerOpen(true)} className="mt-3 rounded-lg border border-gold/40 px-3 py-1.5 text-xs font-semibold text-gold hover:bg-gold/10">
+            Alle Einzahlungen anzeigen
+          </button>
         </section>
       </div>
 
@@ -817,6 +832,7 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
         ))}
 
       <ResultModal target={target} onClose={() => setTarget(null)} />
+      <PotLedger open={ledgerOpen} onClose={() => setLedgerOpen(false)} />
     </div>
   );
 }

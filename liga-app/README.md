@@ -83,7 +83,9 @@ Ohne diese Werte läuft die App im lokalen Testmodus **ohne Login** (Daten nur i
   das Startgeld (Standard 15 €) in die Kasse, der Spielplan entsteht aus den Anwesenden.
 - Jede 180 (Reiter „Specials“) kostet jeden Anwesenden des Spieltags einen Betrag (Standard 5 €).
   Optional zahlt der Werfer nicht mit. Ändert sich die Anwesenheit später, wird neu gerechnet.
-- Kasse pro Spieltag und Saison gesamt stehen beim Spieltag und bei den Specials. Beträge unter Admin → Liga-Kasse.
+- **Aktueller Pot** = Startgeld aller Spieltage + alle Liga-180er + Turnier-Startgeld + Turnier-180er. Er steht
+  im Turnier und bei jeder Spieltags-Kasse. „Alle Einzahlungen anzeigen“ listet jede Einzahlung einzeln nach Spieltag.
+  Der Turniersieger bekommt diesen Pot in der Hall of Fame eingetragen. Beträge unter Admin → Liga-Kasse.
 
 ## Turnier-Modus (1 Board)
 
