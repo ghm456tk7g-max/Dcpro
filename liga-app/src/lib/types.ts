@@ -125,6 +125,8 @@ export interface HallOfFameEntry {
   pot: number;
   tournament: string;
   placeholder?: boolean;
+  /** Siegerfoto als verkleinerte JPEG-Data-URL */
+  photo?: string | null;
 }
 
 export const defaultTournament = (): Tournament => ({

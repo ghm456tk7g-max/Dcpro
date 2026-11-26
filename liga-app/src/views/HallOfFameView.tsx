@@ -1,5 +1,6 @@
 import { ChangeEvent, useState } from 'react';
-import { Award, Check, Crown, Pencil, Plus, Trash2, Trophy, X } from 'lucide-react';
+import { Award, Camera, Check, Crown, Pencil, Plus, Trash2, Trophy, X } from 'lucide-react';
+import { compressImage } from '../lib/image';
 import { useLeague } from '../lib/league';
 import { formatDate } from '../lib/logic';
 import { computeDE, euro, tNames } from '../lib/tournament';
@@ -15,12 +16,31 @@ interface Draft {
   pot: string;
   tournament: string;
   date: string;
+  photo: string | null;
 }
 
 function EntryForm({ initial, onSave, onCancel }: { initial: Draft; onSave(d: Draft): void; onCancel(): void }) {
   const [d, setD] = useState(initial);
   const input = 'w-full rounded-xl border border-line bg-panel2 px-3 py-2 text-sm outline-none focus:border-accent/60';
   const set = (k: keyof Draft) => (e: ChangeEvent<HTMLInputElement>) => setD({ ...d, [k]: e.target.value });
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const pick = async (e: ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    if (!f) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      setD((x) => ({ ...x, photo: null }));
+      const photo = await compressImage(f);
+      setD((x) => ({ ...x, photo }));
+    } catch (er) {
+      setErr(er instanceof Error ? er.message : 'Bild konnte nicht geladen werden');
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
     <form
       className="grid gap-2 p-4 sm:grid-cols-[5rem_1fr_6rem_1fr_9rem_auto] sm:items-end sm:px-5"
@@ -49,6 +69,25 @@ function EntryForm({ initial, onSave, onCancel }: { initial: Draft; onSave(d: Dr
         Datum
         <input id="hof-date" type="date" value={d.date} onChange={set('date')} className={`${input} mt-1 [color-scheme:dark]`} />
       </label>
+      <div className="flex flex-wrap items-center gap-3 sm:col-span-6">
+        {d.photo ? (
+          <img src={d.photo} alt="" className="h-16 w-16 rounded-xl border border-gold/40 object-cover" />
+        ) : (
+          <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-dashed border-line text-muted">
+            <Camera size={20} />
+          </div>
+        )}
+        <label className="cursor-pointer rounded-lg border border-line px-3 py-2 text-xs font-semibold text-white hover:bg-white/5">
+          {busy ? 'Lädt …' : d.photo ? 'Anderes Foto wählen' : 'Siegerfoto hochladen'}
+          <input id="hof-photo" type="file" accept="image/*" onChange={pick} className="hidden" />
+        </label>
+        {d.photo && (
+          <button type="button" onClick={() => setD({ ...d, photo: null })} className="text-xs text-muted hover:text-red-300">
+            Foto entfernen
+          </button>
+        )}
+        {err && <span className="text-xs text-red-300">{err}</span>}
+      </div>
       <div className="flex gap-1">
         <button type="submit" className="rounded-lg p-2.5 text-accent hover:bg-white/5" aria-label="Speichern">
           <Check size={18} />
@@ -68,6 +107,7 @@ const toEntry = (d: Draft, id: string): HallOfFameEntry => ({
   pot: Math.max(0, parseFloat(d.pot.replace(',', '.')) || 0),
   tournament: d.tournament.trim() || `Steeldart-Turnier ${d.year}`,
   date: d.date || null,
+  photo: d.photo,
 });
 
 export default function HallOfFameView({ goTournament }: { goTournament(): void }) {
@@ -105,9 +145,17 @@ export default function HallOfFameView({ goTournament }: { goTournament(): void 
             <Trophy size={220} strokeWidth={1} />
           </div>
           <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center">
-            <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-3xl border border-gold/50 bg-gold/15 text-gold">
-              <Crown size={52} />
-            </div>
+            {champ.photo ? (
+              <img
+                src={champ.photo}
+                alt={`Siegerfoto ${champ.name}`}
+                className="aspect-square w-full max-w-[18rem] shrink-0 rounded-2xl border-2 border-gold/60 object-cover shadow-gold sm:w-56 tablet:w-72"
+              />
+            ) : (
+              <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-3xl border border-gold/50 bg-gold/15 text-gold">
+                <Crown size={52} />
+              </div>
+            )}
             <div className="min-w-0">
               <div className="text-xs font-bold uppercase tracking-[0.22em] text-gold">
                 {champ.year === String(new Date().getFullYear() - 1) ? 'Gewinner des letzten Jahres' : 'Amtierender Champion'} · {champ.year}
@@ -157,7 +205,7 @@ export default function HallOfFameView({ goTournament }: { goTournament(): void 
           {adding && (
             <div className="border-t border-line">
               <EntryForm
-                initial={{ year: String(new Date().getFullYear()), name: '', pot: '', tournament: '', date: '' }}
+                initial={{ year: String(new Date().getFullYear()), name: '', pot: '', tournament: '', date: '', photo: null }}
                 onCancel={() => setAdding(false)}
                 onSave={(d) => {
                   update((s) => void s.hallOfFame.push(toEntry(d, uid())), `${d.name} eingetragen`);
@@ -171,7 +219,7 @@ export default function HallOfFameView({ goTournament }: { goTournament(): void 
               editing === e.id ? (
                 <li key={e.id} className="border-t border-line/60">
                   <EntryForm
-                    initial={{ year: e.year, name: e.name, pot: String(e.pot), tournament: e.tournament, date: e.date ?? '' }}
+                    initial={{ year: e.year, name: e.name, pot: String(e.pot), tournament: e.tournament, date: e.date ?? '', photo: e.photo ?? null }}
                     onCancel={() => setEditing(null)}
                     onSave={(d) => {
                       update((s) => {
@@ -185,6 +233,7 @@ export default function HallOfFameView({ goTournament }: { goTournament(): void 
               ) : (
                 <li key={e.id} className="flex items-center gap-3 border-t border-line/60 px-4 py-3 sm:px-5">
                   <span className={`w-14 shrink-0 font-display text-lg font-extrabold tabular-nums ${i === 0 ? 'text-gold' : 'text-white/70'}`}>{e.year}</span>
+                  {e.photo && <img src={e.photo} alt="" className="h-10 w-10 shrink-0 rounded-lg border border-line object-cover" />}
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold tablet:text-lg">
                       {i === 0 && <Crown size={15} className="mr-1.5 inline text-gold" />}

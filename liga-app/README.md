@@ -69,7 +69,7 @@ Ohne diese Werte läuft die App im lokalen Testmodus **ohne Login** (Daten nur i
 | **Rangliste** | Gesamt- oder Tages-Tabelle, Klick auf einen Spieler öffnet das Oche-Profil |
 | **K.O.-Phase** | Brackets entstehen automatisch, sobald alle Ligaspiele des Spieltags eingetragen sind (obere Hälfte ins Gewinner-, untere Hälfte ins Loser-Bracket, Freilose an die Bestplatzierten) |
 | **Turnier** | Eigenständiges Steeldart-Turnier: Teilnehmer & Kasse (Gebühr, Bezahlt Ja/Nein, aktueller Pot), Auslosung in 2 Gruppen mit optimierter Board-Reihenfolge, Gruppenphase (Jeder gegen Jeden), danach Double Elimination |
-| **Hall of Fame** | Titelverteidiger groß, Chronik aller Sieger mit Pot; Turniersieger per Klick übernehmen |
+| **Hall of Fame** | Titelverteidiger groß (mit Siegerfoto), Chronik aller Sieger mit Pot; Turniersieger per Klick übernehmen. Fotos lädt der Admin beim Bearbeiten eines Eintrags hoch (werden automatisch verkleinert) |
 | **Specials** | Zähler für 180er, High-Finishes (100+) und das höchste Finish pro Spieltag |
 | **Admin** | PIN-Login, Spieler, Leg-Distanzen, PIN ändern, neue Saison, Demo-Daten, Backup-Export/-Import |
 
