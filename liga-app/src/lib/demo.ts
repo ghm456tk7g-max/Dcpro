@@ -11,14 +11,16 @@ function rng(seed: number) {
 }
 
 const NAMES = ['Max', 'Lena', 'Deniz', 'Jonas', 'Sarah', 'Tobi', 'Mia', 'Kalle'];
-/** grobe Spielstärke für realistischere Ergebnisse */
-const SKILL = [0.68, 0.62, 0.58, 0.52, 0.5, 0.45, 0.4, 0.33];
 
-export function buildDemoState(): LeagueState {
+/** Demo-Stand. Optional mit eigenen Namen (z. B. für Präsentationen) und ohne Gäste im Turnier. */
+export function buildDemoState(opts: { names?: string[]; guests?: boolean } = {}): LeagueState {
+  const names = opts.names?.length ? opts.names : NAMES;
+  /** grobe Spielstärke für realistischere Ergebnisse: von stark nach schwächer */
+  const SKILL = names.map((_, i) => 0.68 - (0.35 * i) / Math.max(1, names.length - 1));
   const rand = rng(1800);
   const state = emptyState();
   state.settings = { ...state.settings, seasonName: '2026', leagueLegs: 5, koLegs: 5 };
-  const players: Player[] = NAMES.map((name) => ({ id: uid(), name, createdAt: new Date().toISOString() }));
+  const players: Player[] = names.map((name) => ({ id: uid(), name, createdAt: new Date().toISOString() }));
   state.players = players;
   state.seasonStarted = true;
   state.matchdays = createSeason(players);
@@ -41,7 +43,7 @@ export function buildDemoState(): LeagueState {
     day.date = date;
     // Spieltag 2: Kalle fehlt -> Spielplan nur für 7 Spieler
     day.started = true;
-    day.attendees = players.map((p) => p.id).filter((id) => di === 0 || id !== players[7].id);
+    day.attendees = players.map((p) => p.id).filter((id) => di === 0 || id !== players[players.length - 1].id);
     day.matches = buildMatches(day.attendees, []);
     let t = new Date(`${date}T19:30:00`).getTime();
     for (const m of day.matches) {
@@ -80,8 +82,12 @@ export function buildDemoState(): LeagueState {
   t.date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   t.participants = [
     ...players.map((p, i) => ({ id: uid(), name: p.name, paid: i !== 3 && i !== 6, leagueId: p.id, s180: i === 0 ? 2 : i === 2 ? 1 : 0 })),
-    { id: uid(), name: 'Gast Ömer', paid: true, leagueId: null, s180: 1 },
-    { id: uid(), name: 'Gast Jule', paid: false, leagueId: null, s180: 0 },
+    ...(opts.guests === false
+      ? []
+      : [
+          { id: uid(), name: 'Gast Ömer', paid: true, leagueId: null, s180: 1 },
+          { id: uid(), name: 'Gast Jule', paid: false, leagueId: null, s180: 0 },
+        ]),
   ];
   const tSkill = new Map(t.participants.map((p, i) => [p.id, SKILL[i] ?? 0.5]));
   const tPlay = (a: string, b: string, firstTo: number): [number, number] => {

@@ -149,7 +149,7 @@ export const defaultHallOfFame = (): HallOfFameEntry[] => [
     id: 'placeholder-2025',
     year: '2025',
     date: '2025-12-13',
-    name: 'Max Mustermann',
+    name: 'Dome',
     pot: 100,
     tournament: 'Steeldart-Turnier 2025',
     placeholder: true,

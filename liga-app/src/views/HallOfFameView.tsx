@@ -168,7 +168,7 @@ export default function HallOfFameView({ goTournament }: { goTournament(): void 
               </div>
               {champ.placeholder && (
                 <div className="mt-3 inline-block rounded-lg border border-amber-400/40 bg-amber-400/10 px-2.5 py-1 text-xs text-amber-200">
-                  Platzhalter – im Admin-Modus mit dem echten Vorjahressieger überschreiben
+                  Pot, Datum und Foto bitte im Admin-Modus ergänzen (Stift-Symbol)
                 </div>
               )}
             </div>
@@ -238,7 +238,7 @@ export default function HallOfFameView({ goTournament }: { goTournament(): void 
                     <div className="truncate font-semibold tablet:text-lg">
                       {i === 0 && <Crown size={15} className="mr-1.5 inline text-gold" />}
                       {e.name}
-                      {e.placeholder && <span className="ml-2 rounded bg-amber-400/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-200">Platzhalter</span>}
+                      {e.placeholder && <span className="ml-2 rounded bg-amber-400/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-200">Angaben ergänzen</span>}
                     </div>
                     <div className="truncate text-xs text-muted">
                       {e.tournament}
