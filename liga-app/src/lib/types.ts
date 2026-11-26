@@ -19,6 +19,8 @@ export interface Settings {
   fee180: number;
   /** zahlt der Werfer der 180 selbst mit? */
   throwerPays180: boolean;
+  /** Unternehmenskasse: pro Liga-Spieler und gestartetem Spieltag, egal ob anwesend (€) – nicht Teil des Pots */
+  clubFee: number;
 }
 
 export interface LeagueMatch {
@@ -169,7 +171,7 @@ export interface LeagueState {
 
 export const emptyState = (): LeagueState => ({
   version: 1,
-  settings: { seasonName: '2026', leagueLegs: 5, koLegs: 5, dayFee: 15, fee180: 5, throwerPays180: true },
+  settings: { seasonName: '2026', leagueLegs: 5, koLegs: 5, dayFee: 15, fee180: 5, throwerPays180: true, clubFee: 10 },
   players: [],
   seasonStarted: false,
   matchdays: [],

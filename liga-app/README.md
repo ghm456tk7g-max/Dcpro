@@ -87,6 +87,9 @@ Ohne diese Werte läuft die App im lokalen Testmodus **ohne Login** (Daten nur i
   im Turnier und bei jeder Spieltags-Kasse. „Alle Einzahlungen anzeigen“ listet jede Einzahlung einzeln nach Spieltag.
   Der Turniersieger bekommt diesen Pot in der Hall of Fame eingetragen. Beträge unter Admin → Liga-Kasse.
 
+- **Unternehmenskasse** (getrennt vom Pot): An jedem gestarteten Spieltag zahlt **jeder Liga-Spieler** 10 €, auch wer
+  nicht anwesend ist. Steht in der Spieltags-Kasse und als eigener Abschnitt unter „Alle Einzahlungen“; Betrag unter Admin → Liga-Kasse.
+
 ## Turnier-Modus (1 Board)
 
 - **Auslosung:** zufällig in 2 Gruppen (Größenunterschied max. 1). Die Board-Reihenfolge wird aus 400 zufälligen

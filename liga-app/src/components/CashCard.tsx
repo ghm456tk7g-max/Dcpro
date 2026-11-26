@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Coins } from 'lucide-react';
 import PotLedger from './PotLedger';
 import { useLeague } from '../lib/league';
-import { dayCash, potLedger, seasonCash } from '../lib/cash';
+import { clubCash, clubLedger, dayCash, potLedger, seasonCash } from '../lib/cash';
 import { euro } from '../lib/tournament';
 import { Matchday } from '../lib/types';
 
@@ -14,6 +14,8 @@ export default function CashCard({ day, compact = false }: { day: Matchday; comp
   const season = seasonCash(state);
   const pot = potLedger(state).total;
   const [open, setOpen] = useState(false);
+  const club = clubCash(day, state);
+  const clubTotal = clubLedger(state).total;
   return (
     <section className="rounded-2xl border border-gold/40 bg-gradient-to-br from-gold/15 via-panel to-panel p-4 shadow-gold sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -48,7 +50,22 @@ export default function CashCard({ day, compact = false }: { day: Matchday; comp
             <span className="font-semibold tabular-nums">{euro(c.bonus)}</span>
           </div>
         </div>
-      ) : (
+      ) : null}
+      {day.started && (
+        <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-sky-400/30 bg-sky-400/5 px-3 py-2 text-sm">
+          <span className="min-w-0">
+            <span className="font-semibold text-sky-200">Unternehmenskasse</span>
+            <span className="block text-xs text-muted">
+              alle {club.players} Spieler × {euro(s.clubFee)} · auch wer fehlt · nicht im Pot
+            </span>
+          </span>
+          <span className="shrink-0 text-right">
+            <span className="font-display font-bold tabular-nums text-sky-200">+{euro(club.amount)}</span>
+            <span className="block text-[11px] text-muted">gesamt {euro(clubTotal)}</span>
+          </span>
+        </div>
+      )}
+      {!day.started && (
         <p className="mt-2 text-sm text-muted">Spieltag noch nicht gestartet – die Kasse füllt sich, sobald Spieler auf „Anwesend“ gesetzt werden.</p>
       )}
       <PotLedger open={open} onClose={() => setOpen(false)} />

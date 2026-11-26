@@ -106,3 +106,20 @@ export function potLedger(state: LeagueState): { groups: LedgerGroup[]; total: n
 
   return { groups, total: league + tournament, league, tournament };
 }
+
+/* ------------------------------------------------------------------ */
+/* Unternehmenskasse: jeder Liga-Spieler zahlt pro Spieltag, auch wer fehlt (nicht im Pot) */
+/* ------------------------------------------------------------------ */
+
+export function clubCash(d: Matchday, state: LeagueState) {
+  const players = state.players.length;
+  const amount = d.started ? players * state.settings.clubFee : 0;
+  return { players, amount };
+}
+
+export function clubLedger(state: LeagueState) {
+  const lines = state.matchdays
+    .filter((d) => d.started)
+    .map((d) => ({ key: `club-${d.number}`, number: d.number, date: d.date, ...clubCash(d, state) }));
+  return { lines, total: lines.reduce((s, l) => s + l.amount, 0) };
+}

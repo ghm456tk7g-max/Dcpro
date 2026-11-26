@@ -1,6 +1,6 @@
 import { Coins, Flame, Users } from 'lucide-react';
 import { useLeague } from '../lib/league';
-import { potLedger } from '../lib/cash';
+import { clubLedger, potLedger } from '../lib/cash';
 import { formatDate } from '../lib/logic';
 import { euro } from '../lib/tournament';
 import { Modal } from './ui';
@@ -9,6 +9,7 @@ import { Modal } from './ui';
 export default function PotLedger({ open, onClose }: { open: boolean; onClose(): void }) {
   const { state } = useLeague();
   const { groups, total, league, tournament } = potLedger(state);
+  const club = clubLedger(state);
   return (
     <Modal
       open={open}
@@ -58,6 +59,29 @@ export default function PotLedger({ open, onClose }: { open: boolean; onClose():
           <span>Gesamt</span>
           <span className="tabular-nums">{euro(total)}</span>
         </div>
+        {club.lines.length > 0 && (
+          <section className="rounded-xl border border-sky-400/30 bg-sky-400/5">
+            <div className="flex items-baseline justify-between gap-3 border-b border-sky-400/20 px-3 py-2">
+              <div className="font-semibold text-sky-200">
+                Unternehmenskasse
+                <span className="ml-2 text-xs font-normal text-muted">nicht im Pot</span>
+              </div>
+              <div className="font-display font-bold tabular-nums text-sky-200">{euro(club.total)}</div>
+            </div>
+            <ul>
+              {club.lines.map((l) => (
+                <li key={l.key} className="flex items-center gap-2.5 border-t border-sky-400/10 px-3 py-1.5 text-sm first:border-0">
+                  <span className="min-w-0 flex-1">
+                    Spieltag {l.number}
+                    {l.date && <span className="ml-2 text-xs text-muted">{formatDate(l.date)}</span>}
+                    <span className="block text-xs text-muted">alle {l.players} Spieler × {euro(state.settings.clubFee)}, auch wer fehlt</span>
+                  </span>
+                  <span className="shrink-0 font-semibold tabular-nums">{euro(l.amount)}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </div>
     </Modal>
   );
