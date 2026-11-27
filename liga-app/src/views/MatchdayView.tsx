@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { CalendarDays, Crown, Play, Shuffle, Users, RotateCcw, Swords, UserCheck, UserX, AlertTriangle } from 'lucide-react';
 import { useLeague } from '../lib/league';
 import { shuffle } from '../lib/tournament';
@@ -7,6 +7,8 @@ import { LeagueMatch } from '../lib/types';
 import ResultModal, { ResultTarget } from '../components/ResultModal';
 import SeasonProgress from '../components/SeasonProgress';
 import CashCard from '../components/CashCard';
+import OddsModal from '../components/OddsModal';
+import { buildOddsModel, fmtOdds, matchOdds, Odds } from '../lib/stats';
 import { euro } from '../lib/tournament';
 import { dayCash } from '../lib/cash';
 import StandingsTable from '../components/StandingsTable';
@@ -17,6 +19,8 @@ export default function MatchdayView({ day: dayNo, setDay, goAdmin }: { day: num
   const name = usePlayerName();
   const [target, setTarget] = useState<ResultTarget | null>(null);
   const [rolling, setRolling] = useState(false);
+  const oddsModel = useMemo(() => buildOddsModel(state), [state]);
+  const [oddsView, setOddsView] = useState<{ a: string; b: string; nameA: string; nameB: string; odds: Odds } | null>(null);
   const day = state.matchdays[dayNo - 1];
 
   if (!state.seasonStarted || !day) {
@@ -262,6 +266,11 @@ export default function MatchdayView({ day: dayNo, setDay, goAdmin }: { day: num
             <p className="px-5 pb-5 text-sm text-muted">Mindestens 2 anwesende Spieler nötig.</p>
           ) : (
             <div className="flex flex-col gap-3 px-3 pb-4 sm:px-4">
+              {played < day.matches.length && (
+                <p className="-mt-1 px-1 text-[11px] text-muted">
+                  Zahlen neben den Namen = <span className="text-accent-light">Wettquote</span> nach aktueller Form · antippen für Details · just for fun
+                </p>
+              )}
               {rounds.map((r) => (
                 <div key={r}>
                   <div className="mb-1.5 px-1 text-[11px] font-semibold uppercase tracking-wider text-muted">Runde {r + 1}</div>
@@ -272,16 +281,38 @@ export default function MatchdayView({ day: dayNo, setDay, goAdmin }: { day: num
                         const done = isPlayed(m);
                         const aWin = done && m.legsA! > m.legsB!;
                         const bWin = done && m.legsB! > m.legsA!;
+                        const o = done ? null : matchOdds(oddsModel, m.a, m.b);
+                        const chip = (side: 'a' | 'b') =>
+                          o && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOddsView({ a: m.a, b: m.b, nameA: name(m.a), nameB: name(m.b), odds: o });
+                              }}
+                              title="Wettquote – antippen für Details"
+                              className={`shrink-0 rounded-md border px-1.5 py-0.5 text-[11px] font-semibold tabular-nums transition hover:bg-white/10 tablet:text-sm ${
+                                o.favorite === side ? 'border-accent/50 text-accent-light' : 'border-line text-muted'
+                              }`}
+                            >
+                              {fmtOdds(side === 'a' ? o.oddsA : o.oddsB)}
+                            </button>
+                          );
                         return (
-                          <button
+                          <div
                             key={m.id}
+                            role={canEdit ? 'button' : undefined}
+                            tabIndex={canEdit ? 0 : undefined}
                             onClick={() => openMatch(m)}
-                            disabled={!canEdit}
+                            onKeyDown={(e) => canEdit && (e.key === 'Enter' || e.key === ' ') && openMatch(m)}
                             className={`grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-xl border px-3 py-2 transition tablet:py-3 ${
                               done ? 'border-line bg-panel2' : 'border-dashed border-line bg-transparent'
-                            } ${canEdit ? 'hover:border-accent/60' : 'cursor-default'}`}
+                            } ${canEdit ? 'cursor-pointer hover:border-accent/60' : 'cursor-default'}`}
                           >
-                            <span className={`truncate text-right text-sm tablet:text-xl ${aWin ? 'font-bold text-white' : done ? 'text-white/50' : 'text-white'}`}>{name(m.a)}</span>
+                            <span className="flex min-w-0 items-center justify-end gap-2">
+                              {chip('a')}
+                              <span className={`truncate text-right text-sm tablet:text-xl ${aWin ? 'font-bold text-white' : done ? 'text-white/50' : 'text-white'}`}>{name(m.a)}</span>
+                            </span>
                             <span
                               className={`min-w-[64px] rounded-lg px-2 py-1 text-center font-display font-bold tabular-nums tablet:min-w-[90px] tablet:text-2xl ${
                                 done ? 'bg-bg text-white' : 'text-muted'
@@ -299,8 +330,11 @@ export default function MatchdayView({ day: dayNo, setDay, goAdmin }: { day: num
                                 '– : –'
                               )}
                             </span>
-                            <span className={`truncate text-left text-sm tablet:text-xl ${bWin ? 'font-bold text-white' : done ? 'text-white/50' : 'text-white'}`}>{name(m.b)}</span>
-                          </button>
+                            <span className="flex min-w-0 items-center gap-2">
+                              <span className={`truncate text-left text-sm tablet:text-xl ${bWin ? 'font-bold text-white' : done ? 'text-white/50' : 'text-white'}`}>{name(m.b)}</span>
+                              {chip('b')}
+                            </span>
+                          </div>
                         );
                       })}
                   </div>
@@ -371,6 +405,7 @@ export default function MatchdayView({ day: dayNo, setDay, goAdmin }: { day: num
       )}
 
       <ResultModal target={target} onClose={() => setTarget(null)} />
+      <OddsModal data={oddsView} onClose={() => setOddsView(null)} />
     </div>
   );
 }

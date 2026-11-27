@@ -50,6 +50,8 @@ export interface SpecialEntry {
   hf: number;
   /** Höchstes Finish des Abends (0 = keins) */
   bestFinish: number;
+  /** 3-Dart-Average des Abends (aus Scolia abgetippt), null = nicht eingetragen */
+  avg?: number | null;
 }
 
 export interface Matchday {

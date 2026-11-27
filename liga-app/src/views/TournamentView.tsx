@@ -25,6 +25,8 @@ import {
 import { defaultTournament, GroupKey, Tournament, uid } from '../lib/types';
 import DoubleElim from '../components/DoubleElim';
 import PotLedger from '../components/PotLedger';
+import OddsModal from '../components/OddsModal';
+import { buildOddsModel, fmtOdds, matchOdds, Odds } from '../lib/stats';
 import { potLedger, seasonCash } from '../lib/cash';
 import ResultModal, { ResultTarget } from '../components/ResultModal';
 import { Btn, Card, CardTitle, ProgressBar, Segmented } from '../components/ui';
@@ -129,6 +131,17 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
   /** Aktueller Pot = alle Liga-Spieltage (Startgeld + 180er) + Turnier */
   const pot = potLedger(state).total;
   const [ledgerOpen, setLedgerOpen] = useState(false);
+  const [oddsView, setOddsView] = useState<{ a: string; b: string; nameA: string; nameB: string; odds: Odds } | null>(null);
+  const oddsModel = useMemo(() => buildOddsModel(state), [state]);
+  /** Quote nur, wenn beide Turnier-Spieler Liga-Spieler sind (sonst fehlen Daten) */
+  const boardOdds = (() => {
+    const q = queue[0];
+    if (!q) return null;
+    const la = t.participants.find((p) => p.id === q.a)?.leagueId;
+    const lb = t.participants.find((p) => p.id === q.b)?.leagueId;
+    if (!la || !lb) return null;
+    return { a: la, b: lb, nameA: names.get(q.a) ?? '—', nameB: names.get(q.b) ?? '—', odds: matchOdds(oddsModel, la, lb) };
+  })();
   const paid = paidCount(t);
   const groupPlayed = t.groupMatches.filter(isPlayed).length;
   const hasResults = groupPlayed > 0 || Object.keys(t.koResults).length > 0;
@@ -425,6 +438,18 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
             >
               {name(queue[0].a)} <span className="text-muted">vs</span> {name(queue[0].b)}
             </button>
+            {boardOdds && (
+              <button
+                onClick={() => setOddsView(boardOdds)}
+                className="rounded-xl border border-line px-3 py-2 text-left text-xs text-muted transition hover:bg-white/5"
+                title="Wettquote – antippen für Details"
+              >
+                Quote
+                <div className="font-display text-base font-bold tabular-nums text-white">
+                  {fmtOdds(boardOdds.odds.oddsA)} : {fmtOdds(boardOdds.odds.oddsB)}
+                </div>
+              </button>
+            )}
             {canEdit && (
               <div className="flex gap-2">
                 {[queue[0].a, queue[0].b].map((pid) => (
@@ -827,6 +852,7 @@ export default function TournamentView({ goHallOfFame }: { goHallOfFame(): void 
 
       <ResultModal target={target} onClose={() => setTarget(null)} />
       <PotLedger open={ledgerOpen} onClose={() => setLedgerOpen(false)} />
+      <OddsModal data={oddsView} onClose={() => setOddsView(null)} />
     </div>
   );
 }

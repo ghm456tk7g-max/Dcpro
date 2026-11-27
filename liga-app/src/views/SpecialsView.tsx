@@ -5,6 +5,7 @@ import { Card, CardTitle, EmptyState, MatchdayPicker, PlayerLink } from '../comp
 import CashCard from '../components/CashCard';
 import { dayCash } from '../lib/cash';
 import { euro } from '../lib/tournament';
+import { avgSeries } from '../lib/stats';
 
 const empty: SpecialEntry = { s180: 0, hf: 0, bestFinish: 0 };
 
@@ -81,17 +82,18 @@ export default function SpecialsView({ day: dayNo, setDay }: { day: number; setD
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <Card>
           <CardTitle>Spieltag {dayNo}</CardTitle>
-          <div className="hidden grid-cols-[1fr_auto_auto_auto] gap-4 px-5 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted sm:grid">
+          <div className="hidden grid-cols-[1fr_auto_auto_auto_auto] gap-4 px-5 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted sm:grid">
             <span>Spieler</span>
             <span className="w-[136px] text-center">180er</span>
             <span className="w-[136px] text-center">High-Finishes</span>
             <span className="w-24 text-center">Höchstes</span>
+            <span className="w-24 text-center text-accent-light">Average</span>
           </div>
           <ul>
             {day.attendees.map((pid) => {
               const e = { ...empty, ...day.specials[pid] };
               return (
-                <li key={pid} className="grid grid-cols-2 items-center gap-3 border-t border-line/60 px-4 py-3 sm:grid-cols-[1fr_auto_auto_auto] sm:gap-4 sm:px-5">
+                <li key={pid} className="grid grid-cols-2 items-center gap-3 border-t border-line/60 px-4 py-3 sm:grid-cols-[1fr_auto_auto_auto_auto] sm:gap-4 sm:px-5">
                   <PlayerLink id={pid} className="col-span-2 font-semibold sm:col-span-1 tablet:text-xl" />
                   <div className="flex flex-col items-center gap-1 sm:w-[136px]">
                     <span className="text-[10px] font-semibold uppercase text-muted sm:hidden">180er</span>
@@ -101,7 +103,7 @@ export default function SpecialsView({ day: dayNo, setDay }: { day: number; setD
                     <span className="text-[10px] font-semibold uppercase text-muted sm:hidden">High-Finishes</span>
                     <Counter value={e.hf} disabled={!canEdit} onChange={(v) => set(pid, { hf: v })} />
                   </div>
-                  <div className="col-span-2 flex items-center justify-center gap-2 sm:col-span-1 sm:w-24">
+                  <div className="flex flex-col items-center justify-center gap-1 sm:w-24">
                     <span className="text-[10px] font-semibold uppercase text-muted sm:hidden">Höchstes Finish</span>
                     {canEdit ? (
                       <input
@@ -120,6 +122,28 @@ export default function SpecialsView({ day: dayNo, setDay }: { day: number; setD
                       />
                     ) : (
                       <span className="font-display text-lg font-bold">{e.bestFinish || '–'}</span>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-center justify-center gap-1 sm:w-24">
+                    <span className="text-[10px] font-semibold uppercase text-accent-light sm:hidden">Average</span>
+                    {canEdit ? (
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="Ø"
+                        aria-label="3-Dart-Average"
+                        defaultValue={typeof e.avg === 'number' ? String(e.avg).replace('.', ',') : ''}
+                        key={`${pid}-avg-${e.avg ?? ''}`}
+                        onBlur={(ev) => {
+                          const raw = ev.target.value.trim().replace(',', '.');
+                          const n = raw === '' ? null : Math.round(Math.min(180, Math.max(0, parseFloat(raw) || 0)) * 100) / 100;
+                          const next = n === 0 ? null : n;
+                          if (next !== (e.avg ?? null)) set(pid, { avg: next });
+                        }}
+                        className="w-20 rounded-lg border border-accent/40 bg-panel2 px-2 py-2 text-center font-display font-bold"
+                      />
+                    ) : (
+                      <span className="font-display text-lg font-bold text-accent-light">{typeof e.avg === 'number' ? e.avg.toLocaleString('de-DE', { maximumFractionDigits: 2 }) : '–'}</span>
                     )}
                   </div>
                 </li>
@@ -142,7 +166,8 @@ export default function SpecialsView({ day: dayNo, setDay }: { day: number; setD
                   <Target size={13} className="mr-1 inline" />
                   HF
                 </th>
-                <th className="px-4 py-2 text-right font-semibold">Höchstes</th>
+                <th className="px-2 py-2 text-right font-semibold">Höchstes</th>
+                <th className="px-4 py-2 text-right font-semibold text-accent-light">Ø Avg</th>
               </tr>
             </thead>
             <tbody>
@@ -154,7 +179,13 @@ export default function SpecialsView({ day: dayNo, setDay }: { day: number; setD
                   </td>
                   <td className="px-2 py-2.5 text-right font-display font-bold tabular-nums text-accent-light">{t.s180}</td>
                   <td className="px-2 py-2.5 text-right font-display font-bold tabular-nums">{t.hf}</td>
-                  <td className="px-4 py-2.5 text-right font-display font-bold tabular-nums text-gold">{t.best || '–'}</td>
+                  <td className="px-2 py-2.5 text-right font-display font-bold tabular-nums text-gold">{t.best || '–'}</td>
+                  <td className="px-4 py-2.5 text-right font-display font-bold tabular-nums text-accent-light">
+                    {(() => {
+                      const m = avgSeries(state, t.id).mean;
+                      return m !== null ? m.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : '–';
+                    })()}
+                  </td>
                 </tr>
               ))}
             </tbody>

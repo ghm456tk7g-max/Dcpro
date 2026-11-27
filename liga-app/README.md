@@ -94,6 +94,17 @@ Ohne diese Werte läuft die App im lokalen Testmodus **ohne Login** (Daten nur i
   den 180ern, Unternehmenskasse, Turnier) und ob die **Mindestteilnahme von 6 Spieltagen** für eine Auszahlung
   erreicht ist (Fortschrittsring + Übersicht der 12 Spieltage). Mindestteilnahme unter Admin → Liga-Kasse.
 
+## Statistiken & Wettquoten
+
+- **Average:** Im Reiter „Specials“ trägt der Admin pro Spieler und Spieltag den 3-Dart-Average aus Scolia ein
+  (Komma oder Punkt). Das Oche-Profil zeigt Ø Saison, besten Abend, letzten Wert und den Verlauf über 12 Spieltage.
+- **Direkter Vergleich** im Profil: Spiele, Siege, Niederlagen und Legs gegen jeden Gegner (Liga + K.O. am Spieltag),
+  mit Lieblings- und Angstgegner.
+- **Wettquoten (just for fun)** an jeder offenen Partie am Spieltag und bei „Jetzt am Board“ im Turnier (nur Liga-Spieler):
+  Stärke-Rating nach Elo (Siege gegen starke Gegner und klare Siege zählen mehr), Form der letzten 5 Spiele,
+  Punkte pro Spiel, direkter Vergleich und Average. Bei wenigen Spielen werden die Unterschiede gedämpft,
+  die Siegchance bleibt zwischen 10 und 90 %. Antippen zeigt, wie die Quote entsteht.
+
 ## Turnier-Modus (1 Board)
 
 - **Auslosung:** zufällig in 2 Gruppen (Größenunterschied max. 1). Die Board-Reihenfolge wird aus 400 zufälligen

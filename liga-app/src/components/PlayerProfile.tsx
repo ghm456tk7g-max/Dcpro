@@ -15,6 +15,9 @@ import { RANKS, rangeLabel, rankProgress } from '../lib/ranks';
 import { MATCHDAY_COUNT } from '../lib/types';
 import RankBadge from './RankBadge';
 import PaymentCard from './PaymentCard';
+import AvgCard from './AvgCard';
+import H2HCard from './H2HCard';
+import { avgSeries, headToHead } from '../lib/stats';
 import { playerPayments } from '../lib/cash';
 import { Modal, ProgressBar } from './ui';
 
@@ -187,6 +190,12 @@ export default function PlayerProfile() {
             </div>
           ))}
         </div>
+
+        {/* Average */}
+        <AvgCard {...avgSeries(state, player.id)} />
+
+        {/* Direkter Vergleich */}
+        <H2HCard rows={headToHead(state, player.id)} name={(id) => state.players.find((p) => p.id === id)?.name ?? '—'} onOpen={openProfile} />
 
         {/* Kasse & Auszahlung */}
         <PaymentCard pay={playerPayments(state, player.id)} />
