@@ -1,6 +1,6 @@
 import { buildMatches, createSeason, pruneKoResults, computeKo } from './logic';
 import { boardQueue, computeDE, createGroupPhase } from './tournament';
-import { LeagueState, Player, emptyState, uid } from './types';
+import { Bet, LeagueState, Player, emptyState, uid } from './types';
 
 /** Kleiner deterministischer Zufallsgenerator, damit die Demo immer gleich aussieht */
 function rng(seed: number) {
@@ -58,6 +58,20 @@ export function buildDemoState(opts: { names?: string[]; guests?: boolean } = {}
       const hf = Math.floor(rand() * 2.6 * skill.get(id)!);
       day.specials[id] = { s180, hf, bestFinish: hf ? 100 + Math.floor(rand() * 61) : 0 };
     }
+    // Wettbüro: jeder setzt seine 5 € in 1-€-Tipps (nie auf sich selbst)
+    const markets = state.settings.defaultMarkets;
+    day.events = { nineDarter: false };
+    const bets: Bet[] = [];
+    day.attendees.forEach((id) => {
+      day.specials[id] = { ...day.specials[id], s26: Math.floor(rand() * 4) };
+      for (let k = 0; k < 5; k++) {
+        const market = markets[Math.floor(rand() * markets.length)];
+        const others = day.attendees.filter((x) => x !== id);
+        const pick = market === 'nineDarter' ? 'yes' : others[Math.floor(rand() * others.length)];
+        bets.push({ id: uid(), bettor: id, market, pick, stake: 1, at: new Date(`${date}T19:00:00`).toISOString() });
+      }
+    });
+    day.bets = bets;
     // K.O.-Phase: Spieltag 1 komplett, Spieltag 2 bis zum Halbfinale
     for (let pass = 0; pass < 4; pass++) {
       const ko = computeKo(day, state.players);

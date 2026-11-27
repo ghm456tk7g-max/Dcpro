@@ -10,7 +10,7 @@ import { Matchday } from '../lib/types';
 export default function CashCard({ day, compact = false }: { day: Matchday; compact?: boolean }) {
   const { state } = useLeague();
   const s = state.settings;
-  const c = dayCash(day, s);
+  const c = dayCash(day, s, state);
   const season = seasonCash(state);
   const pot = potLedger(state).total;
   const [open, setOpen] = useState(false);
@@ -49,6 +49,12 @@ export default function CashCard({ day, compact = false }: { day: Matchday; comp
             </span>
             <span className="font-semibold tabular-nums">{euro(c.bonus)}</span>
           </div>
+          {c.bets !== 0 && (
+            <div className="flex justify-between gap-3">
+              <span className="text-muted">Wettbüro · Einsätze, verfallene Töpfe, Münzwurf</span>
+              <span className="font-semibold tabular-nums">{euro(c.bets)}</span>
+            </div>
+          )}
         </div>
       ) : null}
       {day.started && (

@@ -105,6 +105,22 @@ Ohne diese Werte läuft die App im lokalen Testmodus **ohne Login** (Daten nur i
   Punkte pro Spiel, direkter Vergleich und Average. Bei wenigen Spielen werden die Unterschiede gedämpft,
   die Siegchance bleibt zwischen 10 und 90 %. Antippen zeigt, wie die Quote entsteht.
 
+## Wettbüro (Reiter „Specials“ → „Wettbüro“)
+
+- Von den 15 € Startgeld sind **5 € Wettguthaben** pro Anwesendem und Spieltag (Admin → Liga-Kasse). Nicht gesetztes
+  Guthaben bleibt im Pot.
+- **Wettmenü:** Der Admin wählt pro Spieltag aus 17 Wetten aus (Tagessieger, höchstes Finish, Finish über 100?,
+  meiste 180er, mehr als 2,5 180er?, bester Average, Rote Laterne, meiste 2:0-Siege, Überraschung des Abends,
+  K.O.-Sieger oben/unten, meiste 26er, meiste Busts, Bull-Finish?, Madhouse?, erste 180, Jackpot 9-Darter) und kann
+  die Auswahl als Standard speichern.
+- **Wettschein:** Wer wettet → welche Wette → Tipp → Einsatz. Auf sich selbst wetten ist nicht möglich.
+  Die Annahme schließt automatisch mit dem ersten eingetragenen Ergebnis (Admin kann öffnen/schließen).
+- **Töpfe:** Jede Wette hat einen eigenen Topf, die richtigen Tipper teilen ihn nach Einsatz (Gleichstand = alle
+  richtig). Liegt niemand richtig, geht der Topf in den Pot. **Jackpot 9-Darter** (nur „Ja“): wandert weiter, bis es passiert.
+- **Ereignisse des Abends:** Zähler für 26er/Busts, Schalter für Bull-Finish, Madhouse, 9-Darter, Auswahl erste 180.
+- **Tippkönig des Abends** (höchster Gewinn) darf per **Münzwurf „Doppelt oder nichts“** spielen: „doppelt“ –
+  der Pot legt drauf, „nichts“ – der Gewinn geht in den Pot. Dazu eine Tippkönig-Rangliste der Saison.
+
 ## Turnier-Modus (1 Board)
 
 - **Auslosung:** zufällig in 2 Gruppen (Größenunterschied max. 1). Die Board-Reihenfolge wird aus 400 zufälligen

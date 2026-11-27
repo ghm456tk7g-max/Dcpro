@@ -23,6 +23,10 @@ export interface Settings {
   clubFee: number;
   /** Mindestanzahl Spieltags-Teilnahmen für eine Auszahlung */
   minAttendance: number;
+  /** Wettbüro: Teil des Startgelds, den jeder Anwesende pro Spieltag verwetten kann (€) */
+  betBudget: number;
+  /** Wettbüro: standardmäßig angebotene Wetten */
+  defaultMarkets: string[];
 }
 
 export interface LeagueMatch {
@@ -52,6 +56,39 @@ export interface SpecialEntry {
   bestFinish: number;
   /** 3-Dart-Average des Abends (aus Scolia abgetippt), null = nicht eingetragen */
   avg?: number | null;
+  /** Zähler fürs Wettbüro */
+  s26?: number;
+  busts?: number;
+}
+
+/* ----------------------------- Wettbüro ----------------------------- */
+
+export interface Bet {
+  id: string;
+  /** wer wettet */
+  bettor: string;
+  /** Wette (Markt-ID aus dem Katalog) */
+  market: string;
+  /** Tipp: Spieler-ID oder 'yes' / 'no' */
+  pick: string;
+  stake: number;
+  at: string;
+}
+
+export interface DayEvents {
+  bullFinish?: boolean;
+  madhouse?: boolean;
+  nineDarter?: boolean;
+  /** wer hat die erste 180 des Abends geworfen */
+  first180?: string | null;
+}
+
+export interface CoinFlip {
+  player: string;
+  /** Gewinn vor dem Münzwurf */
+  amount: number;
+  result: 'double' | 'nothing';
+  at: string;
 }
 
 export interface Matchday {
@@ -66,6 +103,13 @@ export interface Matchday {
   /** K.O.-Ergebnisse, Schlüssel = Match-ID (z. B. "U-R0-M1") */
   koResults: Record<string, KoResult>;
   specials: Record<string, SpecialEntry>;
+  /** Wettbüro: angebotene Wetten (null = Standardauswahl aus den Einstellungen) */
+  betMarkets?: string[] | null;
+  bets?: Bet[];
+  /** Wettannahme manuell geschlossen */
+  betsClosed?: boolean;
+  events?: DayEvents;
+  coinflip?: CoinFlip | null;
 }
 
 /* ----------------------------- Turnier ----------------------------- */
@@ -175,7 +219,7 @@ export interface LeagueState {
 
 export const emptyState = (): LeagueState => ({
   version: 1,
-  settings: { seasonName: '2026', leagueLegs: 2, koLegs: 2, dayFee: 15, fee180: 5, throwerPays180: true, clubFee: 10, minAttendance: 6 },
+  settings: { seasonName: '2026', leagueLegs: 2, koLegs: 2, dayFee: 15, fee180: 5, throwerPays180: true, clubFee: 10, minAttendance: 6, betBudget: 5, defaultMarkets: ['dayWinner', 'highFinish', 'most180', 'most26', 'nineDarter'] },
   players: [],
   seasonStarted: false,
   matchdays: [],
@@ -212,6 +256,11 @@ export function normalizeState(raw: unknown): LeagueState {
           winnerOverride: d.winnerOverride ?? null,
           koResults: d.koResults ?? {},
           specials: d.specials ?? {},
+          betMarkets: d.betMarkets ?? null,
+          bets: d.bets ?? [],
+          betsClosed: d.betsClosed,
+          events: d.events ?? {},
+          coinflip: d.coinflip ?? null,
         }))
       : [],
     tournament: (() => {

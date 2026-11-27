@@ -1,5 +1,6 @@
 import { LeagueState, Matchday, Settings } from './types';
 import { tAmountPer180, tPayersPer180 } from './tournament';
+import { computeDayBets } from './bets';
 
 /** 180er eines Spieltags (nur Anwesende) */
 export const day180s = (d: Matchday) => d.attendees.reduce((sum, id) => sum + (d.specials[id]?.s180 ?? 0), 0);
@@ -15,23 +16,31 @@ export interface DayCash {
   /** Betrag, den eine einzelne 180 in die Kasse bringt */
   per180: number;
   bonus: number;
+  /** Wirkung des Wettbüros auf den Pot (meist negativ: Einsätze/Auszahlungen) */
+  bets: number;
   total: number;
 }
 
-export function dayCash(d: Matchday, s: Settings): DayCash {
-  if (!d.started) return { attendees: 0, fees: 0, count180: 0, per180: 0, bonus: 0, total: 0 };
+/**
+ * Kasse eines Spieltags. Mit `state` wird das Wettbüro berücksichtigt:
+ * Einsätze stammen aus dem Startgeld (sind im Wettbüro, nicht im Pot), verfallene Töpfe
+ * und Restguthaben fließen in den Pot zurück, Auszahlungen gehen an die Gewinner.
+ */
+export function dayCash(d: Matchday, s: Settings, state?: LeagueState): DayCash {
+  if (!d.started) return { attendees: 0, fees: 0, count180: 0, per180: 0, bonus: 0, bets: 0, total: 0 };
   const fees = d.attendees.length * s.dayFee;
   const count180 = day180s(d);
   const per180 = payersPer180(d, s) * s.fee180;
   const bonus = count180 * per180;
-  return { attendees: d.attendees.length, fees, count180, per180, bonus, total: fees + bonus };
+  const bets = state && (d.bets ?? []).length ? computeDayBets(state, d).potEffect : 0;
+  return { attendees: d.attendees.length, fees, count180, per180, bonus, bets, total: fees + bonus + bets };
 }
 
 /** Liga-Kasse über alle gestarteten Spieltage der Saison */
 export function seasonCash(state: LeagueState) {
   return state.matchdays.reduce(
     (acc, d) => {
-      const c = dayCash(d, state.settings);
+      const c = dayCash(d, state.settings, state);
       return { total: acc.total + c.total, fees: acc.fees + c.fees, bonus: acc.bonus + c.bonus, count180: acc.count180 + c.count180, days: acc.days + (d.started ? 1 : 0) };
     },
     { total: 0, fees: 0, bonus: 0, count180: 0, days: 0 },
@@ -68,10 +77,22 @@ export function potLedger(state: LeagueState): { groups: LedgerGroup[]; total: n
 
   for (const d of state.matchdays) {
     if (!d.started) continue;
-    const c = dayCash(d, s);
+    const c = dayCash(d, s, state);
     const lines: LedgerLine[] = [
       { key: `${d.number}-fee`, kind: 'fee', label: 'Startgeld', detail: `${c.attendees} Anwesende × ${eur(s.dayFee)}`, amount: c.fees },
     ];
+    if (c.bets) {
+      const db = computeDayBets(state, d);
+      lines.push({
+        key: `${d.number}-bets`,
+        kind: 'fee',
+        label: 'Wettbüro',
+        detail: db.settled
+          ? `Einsätze ${eur(db.staked)} · Gewinne ausgezahlt, Verfallenes zurück in den Pot`
+          : `Einsätze ${eur(db.staked)} liegen in den Wett-Töpfen`,
+        amount: c.bets,
+      });
+    }
     for (const id of d.attendees) {
       const n = d.specials[id]?.s180 ?? 0;
       if (!n) continue;

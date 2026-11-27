@@ -1,7 +1,9 @@
-import { Flame, Minus, Plus, Target } from 'lucide-react';
+import { useState } from 'react';
+import { Flame, Minus, Plus, Target, Ticket } from 'lucide-react';
 import { useLeague } from '../lib/league';
 import { SpecialEntry } from '../lib/types';
-import { Card, CardTitle, EmptyState, MatchdayPicker, PlayerLink } from '../components/ui';
+import { Card, CardTitle, EmptyState, MatchdayPicker, PlayerLink, Segmented } from '../components/ui';
+import BettingOffice from './BettingOffice';
 import CashCard from '../components/CashCard';
 import { dayCash } from '../lib/cash';
 import { euro } from '../lib/tournament';
@@ -28,6 +30,21 @@ export default function SpecialsView({ day: dayNo, setDay }: { day: number; setD
   const { state, canEdit, update } = useLeague();
   const day = state.matchdays[dayNo - 1];
   const idx = dayNo - 1;
+  const [tab, setTab] = useState<'specials' | 'bets'>(() => {
+    try {
+      return (localStorage.getItem('ddl-specials-tab') as 'specials' | 'bets') || 'specials';
+    } catch {
+      return 'specials';
+    }
+  });
+  const switchTab = (t: 'specials' | 'bets') => {
+    setTab(t);
+    try {
+      localStorage.setItem('ddl-specials-tab', t);
+    } catch {
+      /* egal */
+    }
+  };
 
   if (!state.seasonStarted || !day)
     return <EmptyState icon={<Flame size={30} />} title="Keine Saison aktiv" text="Hier zählt ihr 180er und High-Finishes (100+) aus Scolia mit." />;
@@ -76,6 +93,19 @@ export default function SpecialsView({ day: dayNo, setDay }: { day: number; setD
         <MatchdayPicker value={dayNo} onChange={setDay} />
       </Card>
 
+      <Segmented<'specials' | 'bets'>
+        value={tab}
+        onChange={switchTab}
+        options={[
+          { value: 'specials', label: <span className="flex items-center gap-1.5"><Flame size={15} /> Specials</span> },
+          { value: 'bets', label: <span className="flex items-center gap-1.5"><Ticket size={15} /> Wettbüro</span> },
+        ]}
+      />
+
+      {tab === 'bets' ? (
+        <BettingOffice day={day} />
+      ) : (
+      <>
       <CashCard day={day} compact />
       {!day.started && <Card className="p-4 text-sm text-muted">Spieltag {dayNo} ist noch nicht gestartet. 180er können erst gezählt werden, wenn unter „Spieltag“ die Anwesenden eingetragen sind.</Card>}
 
@@ -192,6 +222,8 @@ export default function SpecialsView({ day: dayNo, setDay }: { day: number; setD
           </table>
         </Card>
       </div>
+      </>
+      )}
     </div>
   );
 }
