@@ -21,6 +21,8 @@ export interface Settings {
   throwerPays180: boolean;
   /** Unternehmenskasse: pro Liga-Spieler und gestartetem Spieltag, egal ob anwesend (€) – nicht Teil des Pots */
   clubFee: number;
+  /** Mindestanzahl Spieltags-Teilnahmen für eine Auszahlung */
+  minAttendance: number;
 }
 
 export interface LeagueMatch {
@@ -171,7 +173,7 @@ export interface LeagueState {
 
 export const emptyState = (): LeagueState => ({
   version: 1,
-  settings: { seasonName: '2026', leagueLegs: 2, koLegs: 2, dayFee: 15, fee180: 5, throwerPays180: true, clubFee: 10 },
+  settings: { seasonName: '2026', leagueLegs: 2, koLegs: 2, dayFee: 15, fee180: 5, throwerPays180: true, clubFee: 10, minAttendance: 6 },
   players: [],
   seasonStarted: false,
   matchdays: [],

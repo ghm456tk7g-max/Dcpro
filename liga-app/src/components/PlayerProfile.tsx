@@ -14,6 +14,8 @@ import {
 import { RANKS, rangeLabel, rankProgress } from '../lib/ranks';
 import { MATCHDAY_COUNT } from '../lib/types';
 import RankBadge from './RankBadge';
+import PaymentCard from './PaymentCard';
+import { playerPayments } from '../lib/cash';
 import { Modal, ProgressBar } from './ui';
 
 interface HistoryItem {
@@ -62,7 +64,7 @@ export default function PlayerProfile() {
           key: m.id,
           time: m.playedAt ? new Date(m.playedAt).getTime() : dayTs,
           date: formatDate(m.playedAt ?? day.date, !!m.playedAt) || `Spieltag ${day.number}`,
-          text: `${win ? 'Sieg' : 'Niederlage'} ${my}:${opp} gegen ${name(me ? m.b : m.a)} · Spieltag ${day.number} · First to ${Math.max(my, opp)}`,
+          text: `${win ? 'Sieg' : 'Niederlage'} ${my}:${opp} gegen ${name(me ? m.b : m.a)} · Spieltag ${day.number} · Best of ${Math.max(my, opp) * 2 - 1}`,
           badge: win ? '+1 Pkt.' : '0 Pkt.',
           tone: win ? 'win' : 'loss',
         });
@@ -185,6 +187,9 @@ export default function PlayerProfile() {
             </div>
           ))}
         </div>
+
+        {/* Kasse & Auszahlung */}
+        <PaymentCard pay={playerPayments(state, player.id)} />
 
         {/* Letzte Spiele */}
         <div className="rounded-2xl border border-line bg-panel">

@@ -298,6 +298,7 @@ export default function AdminView() {
                   ['dayFee', 'Startgeld pro Anwesendem (€)'],
                   ['fee180', 'Pro 180 zahlt jede Person (€) – Liga & Turnier'],
                   ['clubFee', 'Unternehmenskasse pro Spieler & Spieltag (€) – auch wer fehlt, nicht im Pot'],
+                  ['minAttendance', 'Mindestteilnahme für Auszahlung (Spieltage)'],
                 ] as const
               ).map(([k, label]) => (
                 <label key={k} className="text-xs text-muted">

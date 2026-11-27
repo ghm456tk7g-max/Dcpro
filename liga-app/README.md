@@ -90,6 +90,10 @@ Ohne diese Werte läuft die App im lokalen Testmodus **ohne Login** (Daten nur i
 - **Unternehmenskasse** (getrennt vom Pot): An jedem gestarteten Spieltag zahlt **jeder Liga-Spieler** 10 €, auch wer
   nicht anwesend ist. Steht in der Spieltags-Kasse und als eigener Abschnitt unter „Alle Einzahlungen“; Betrag unter Admin → Liga-Kasse.
 
+- **Spieler-Profil → Kasse & Auszahlung:** zeigt, wie viel jemand bisher eingezahlt hat (Startgeld, Anteil an
+  den 180ern, Unternehmenskasse, Turnier) und ob die **Mindestteilnahme von 6 Spieltagen** für eine Auszahlung
+  erreicht ist (Fortschrittsring + Übersicht der 12 Spieltage). Mindestteilnahme unter Admin → Liga-Kasse.
+
 ## Turnier-Modus (1 Board)
 
 - **Auslosung:** zufällig in 2 Gruppen (Größenunterschied max. 1). Die Board-Reihenfolge wird aus 400 zufälligen

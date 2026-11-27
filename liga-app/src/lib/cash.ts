@@ -123,3 +123,79 @@ export function clubLedger(state: LeagueState) {
     .map((d) => ({ key: `club-${d.number}`, number: d.number, date: d.date, ...clubCash(d, state) }));
   return { lines, total: lines.reduce((s, l) => s + l.amount, 0) };
 }
+
+/* ------------------------------------------------------------------ */
+/* Pro Spieler: was wurde eingezahlt, wie oft teilgenommen             */
+/* ------------------------------------------------------------------ */
+
+export type DayAttendance = 'present' | 'absent' | 'open';
+
+export interface PlayerPayments {
+  fees: number;
+  rounds180: number;
+  club: number;
+  tournament: number;
+  total: number;
+  attended: number;
+  startedDays: number;
+  minAttendance: number;
+  eligible: boolean;
+  missing: number;
+  /** Status je Spieltag 1–12 */
+  days: DayAttendance[];
+}
+
+export function playerPayments(state: LeagueState, playerId: string): PlayerPayments {
+  const s = state.settings;
+  let fees = 0;
+  let rounds180 = 0;
+  let club = 0;
+  let attended = 0;
+  let startedDays = 0;
+  const days: DayAttendance[] = [];
+  for (const d of state.matchdays) {
+    if (!d.started) {
+      days.push('open');
+      continue;
+    }
+    startedDays++;
+    club += s.clubFee;
+    if (!d.attendees.includes(playerId)) {
+      days.push('absent');
+      continue;
+    }
+    days.push('present');
+    attended++;
+    fees += s.dayFee;
+    for (const id of d.attendees) {
+      const n = d.specials[id]?.s180 ?? 0;
+      if (!n || (id === playerId && !s.throwerPays180)) continue;
+      rounds180 += n * s.fee180;
+    }
+  }
+  // Turnier: eigene Gebühr (falls bezahlt) + Anteil an allen Turnier-180ern
+  let tournament = 0;
+  const t = state.tournament;
+  const me = t.participants.find((p) => p.leagueId === playerId);
+  if (me) {
+    if (me.paid) tournament += t.fee;
+    for (const p of t.participants) {
+      if (!p.s180 || (p.id === me.id && !s.throwerPays180)) continue;
+      tournament += p.s180 * s.fee180;
+    }
+  }
+  const min = Math.max(0, s.minAttendance ?? 6);
+  return {
+    fees,
+    rounds180,
+    club,
+    tournament,
+    total: fees + rounds180 + club + tournament,
+    attended,
+    startedDays,
+    minAttendance: min,
+    eligible: attended >= min,
+    missing: Math.max(0, min - attended),
+    days,
+  };
+}
