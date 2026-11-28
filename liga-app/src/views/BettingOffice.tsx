@@ -99,7 +99,7 @@ export default function BettingOffice({ day }: { day: Matchday }) {
             </div>
             <div className="mt-1 font-display text-3xl font-extrabold tabular-nums text-gold">{euro(db.staked)} im Spiel</div>
             <div className="text-sm text-muted">
-              {day.attendees.length} Anwesende × {euro(state.settings.betBudget)} Wettguthaben · {(day.bets ?? []).length} Wetten · Rest geht in den Pot
+              {day.attendees.length} Anwesende × {euro(state.settings.betBudget)} Wettguthaben aus dem Startgeld · {(day.bets ?? []).length} Wetten · nicht gesetztes Guthaben geht in den Pot · niemand zahlt nach
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -394,7 +394,7 @@ export default function BettingOffice({ day }: { day: Matchday }) {
                   <th className="px-4 py-2 text-left font-semibold sm:px-5">Spieler</th>
                   <th className="px-2 py-2 text-right font-semibold">Einsatz</th>
                   <th className="px-2 py-2 text-right font-semibold">Auszahlung</th>
-                  <th className="px-4 py-2 text-right font-semibold sm:px-5">Bilanz</th>
+                  <th className="px-4 py-2 text-right font-semibold sm:px-5">Ergebnis</th>
                 </tr>
               </thead>
               <tbody>
@@ -418,6 +418,9 @@ export default function BettingOffice({ day }: { day: Matchday }) {
               </tbody>
             </table>
             </div>
+            <p className="px-4 pb-3 pt-2 text-[11px] text-muted sm:px-5">
+              Eingesetzt werden nur die {euro(state.settings.betBudget)} Wettguthaben aus dem Startgeld – niemand zahlt etwas nach. Ausgezahlt wird nur, was an diesem Abend eingesetzt wurde.
+            </p>
           </Card>
 
           <Card className={`p-5 ${db.king ? 'border-gold/50 shadow-gold' : ''}`}>
@@ -436,19 +439,30 @@ export default function BettingOffice({ day }: { day: Matchday }) {
                     gewinnt {euro(db.king.payout)} (+{euro(db.king.net)})
                   </div>
                 </div>
+                {db.coinStake <= 0 && !day.coinflip ? (
+                  <p className="text-center text-sm text-muted">
+                    Heute sind weniger als 0,50 € Wetteinsatz verfallen ({euro(db.forfeited)}) – zu wenig, um eine Verdopplung zu bezahlen. Darum gibt es heute keinen Münzwurf, {name(db.king.player)} bekommt die {euro(db.king.payout)} sicher.
+                  </p>
+                ) : (
                 <CoinFlip
                   name={name(db.king.player)}
-                  amount={day.coinflip?.amount ?? db.king.payout}
+                  amount={db.king.payout}
+                  stake={day.coinflip ? Math.min(day.coinflip.amount, db.king.payout) : db.coinStake}
                   done={day.coinflip?.result ?? null}
                   canFlip={canEdit}
                   onResult={(r) =>
                     upd(
-                      (d) => void (d.coinflip = { player: db.king!.player, amount: db.king!.payout, result: r, at: new Date().toISOString() }),
+                      (d) => void (d.coinflip = { player: db.king!.player, amount: db.coinStake, result: r, at: new Date().toISOString() }),
                       r === 'double' ? `${name(db.king!.player)} verdoppelt!` : `${name(db.king!.player)} verliert alles – ab in den Pot`,
                     )
                   }
                 />
-                {!day.coinflip && <p className="text-center text-[11px] text-muted">Freiwillig: Wer nicht riskieren will, wirft einfach nicht. Bei „doppelt“ legt der Pot drauf, bei „nichts“ wandert der Gewinn in den Pot.</p>}
+                )}
+                {!day.coinflip && db.coinStake > 0 && (
+                  <p className="text-center text-[11px] text-muted">
+                    Freiwillig – wer nicht riskieren will, wirft nicht. Bezahlt wird nur aus den heute verfallenen Wetteinsätzen ({euro(db.forfeited)}), darum geht es um höchstens {euro(db.coinStake)}. Niemand zahlt etwas nach.
+                  </p>
+                )}
               </div>
             )}
           </Card>

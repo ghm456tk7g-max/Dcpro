@@ -17,16 +17,21 @@ const fairFlip = (): 'double' | 'nothing' => {
 export default function CoinFlip({
   name,
   amount,
+  stake,
   done,
   canFlip,
   onResult,
 }: {
   name: string;
+  /** Gewinn vor dem Wurf */
   amount: number;
+  /** was riskiert wird (= amount bei echtem „doppelt oder nichts“) */
+  stake: number;
   done: 'double' | 'nothing' | null;
   canFlip: boolean;
   onResult(r: 'double' | 'nothing'): void;
 }) {
+  const full = stake >= amount - 0.005;
   const [spinning, setSpinning] = useState(false);
   const [angle, setAngle] = useState(done === 'nothing' ? 180 : 0);
   const [local, setLocal] = useState<'double' | 'nothing' | null>(done);
@@ -53,34 +58,34 @@ export default function CoinFlip({
           style={{ transform: `rotateY(${angle}deg)`, transition: spinning ? 'transform 2.2s cubic-bezier(.15,.75,.25,1)' : 'none' }}
         >
           <div className={`${face} border-gold bg-gradient-to-br from-[#ffe08a] via-gold to-gold-dark text-bg shadow-gold`}>
-            <span className="font-display text-5xl font-extrabold">×2</span>
-            <span className="text-[10px] font-bold uppercase tracking-widest">Doppelt</span>
+            <span className={`font-display font-extrabold ${full ? 'text-5xl' : 'text-3xl'}`}>{full ? '×2' : `+${euro(stake)}`}</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest">{full ? 'Doppelt' : 'Gewinn'}</span>
           </div>
           <div className={`${face} border-zinc-400 bg-gradient-to-br from-zinc-200 via-zinc-400 to-zinc-600 text-bg [transform:rotateY(180deg)]`}>
-            <span className="font-display text-5xl font-extrabold">0</span>
-            <span className="text-[10px] font-bold uppercase tracking-widest">Nichts</span>
+            <span className={`font-display font-extrabold ${full ? 'text-5xl' : 'text-3xl'}`}>{full ? '0' : `−${euro(stake)}`}</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest">{full ? 'Nichts' : 'Verlust'}</span>
           </div>
         </div>
       </div>
       {result ? (
         result === 'double' ? (
           <div>
-            <div className="font-display text-2xl font-extrabold text-gold">Verdoppelt! 🎉</div>
+            <div className="font-display text-2xl font-extrabold text-gold">{full ? 'Verdoppelt! 🎉' : `+${euro(stake)}! 🎉`}</div>
             <div className="text-sm text-muted">
-              {name} bekommt <b className="text-white">{euro(amount * 2)}</b> statt {euro(amount)}.
+              {name} bekommt <b className="text-white">{euro(amount + stake)}</b> statt {euro(amount)}.
             </div>
           </div>
         ) : (
           <div>
-            <div className="font-display text-2xl font-extrabold text-red-300">Alles weg! 😬</div>
+            <div className="font-display text-2xl font-extrabold text-red-300">{full ? 'Alles weg! 😬' : `−${euro(stake)} 😬`}</div>
             <div className="text-sm text-muted">
-              Die {euro(amount)} von {name} wandern in den Pot.
+              {full ? `Die ${euro(amount)} von ${name} wandern in den Pot.` : `${name} bekommt noch ${euro(amount - stake)}, ${euro(stake)} wandern in den Pot.`}
             </div>
           </div>
         )
       ) : canFlip ? (
         <Btn variant="gold" onClick={flip} disabled={spinning} className="px-6 py-3 text-base">
-          <Coins size={18} /> {spinning ? 'Die Münze fliegt …' : `Münze werfen – ${euro(amount)} riskieren`}
+          <Coins size={18} /> {spinning ? 'Die Münze fliegt …' : `Münze werfen – ${euro(stake)} riskieren`}
         </Btn>
       ) : (
         <p className="text-sm text-muted">Der Münzwurf wird vom Admin am Ende des Abends gestartet.</p>

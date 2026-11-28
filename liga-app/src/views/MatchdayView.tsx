@@ -90,6 +90,11 @@ export default function MatchdayView({ day: dayNo, setDay, goAdmin }: { day: num
       d.matches = buildMatches(d.attendees, d.matches);
       if (d.winnerOverride && !d.attendees.includes(d.winnerOverride)) d.winnerOverride = null;
       delete d.specials[pid];
+      if (present) {
+        // ohne Startgeld kein Wettguthaben: eigene Wetten und Tipps auf ihn werden zurückgenommen
+        d.bets = (d.bets ?? []).filter((b) => b.bettor !== pid && b.pick !== pid);
+        if (d.events?.first180 === pid) d.events.first180 = null;
+      }
       pruneKoResults(d, s.players);
     }, present ? `${name(pid)} abwesend · Kasse −${euro(fee)}` : `${name(pid)} anwesend · Kasse +${euro(fee)}`);
   };

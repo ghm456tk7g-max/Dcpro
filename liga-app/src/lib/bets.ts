@@ -176,9 +176,18 @@ export interface DayBets {
   /** Wirkung auf den Pot (negativ = Geld ist im Wettbüro / wurde ausgezahlt) */
   potEffect: number;
   budget: number;
+  /**
+   * Münzwurf-Einsatz des Tippkönigs: höchstens sein Gewinn und höchstens das, was an diesem Abend
+   * an Wetteinsätzen verfallen ist. So wird nie mehr ausgezahlt als eingesetzt (0 = kein Münzwurf möglich).
+   */
+  coinStake: number;
+  /** verfallene Wetteinsätze des Abends (gedeckt durch die Einsätze, nicht durch den Pot) */
+  forfeited: number;
 }
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
+/** auf volle Cent abrunden – Rest-Cents bleiben im Topf und gehen in den Pot */
+const floor2 = (v: number) => Math.floor(v * 100 + 1e-9) / 100;
 
 /** Jackpot-Topf, der bei Spieltag d ankommt (Summe ungewonnener Jackpot-Töpfe der Vorwochen) */
 function jackpotCarry(state: LeagueState, upTo: number, marketId: string): number {
@@ -208,8 +217,11 @@ export function computeDayBets(state: LeagueState, d: Matchday): DayBets {
     if (resolution.decided) {
       const winning = mBets.filter((b) => resolution.winners.includes(b.pick));
       const wStake = winning.reduce((s, b) => s + b.stake, 0);
-      if (winning.length) winning.forEach((b) => payouts.set(b.id, r2((pool * b.stake) / wStake)));
-      else if (def.jackpot) carryOut = pool;
+      if (winning.length) {
+        winning.forEach((b) => payouts.set(b.id, floor2((pool * b.stake) / wStake)));
+        const paid = [...payouts.values()].reduce((a, v) => a + v, 0);
+        toPot = r2(pool - paid); // Rest-Cents
+      } else if (def.jackpot) carryOut = pool;
       else toPot = pool;
     }
     return { def, pool, carryIn, resolution, bets: mBets, payouts, toPot, carryOut };
@@ -240,27 +252,34 @@ export function computeDayBets(state: LeagueState, d: Matchday): DayBets {
     });
   }
 
+  const staked = r2(bets.reduce((s, b) => s + b.stake, 0));
+  const toPot = r2(markets.reduce((s, m) => s + m.toPot, 0));
+  const kk = king as DayBets['king'];
+  const coinRaw = kk ? r2(Math.min(kk.payout, toPot)) : 0;
+  /** Münzwurf erst ab 0,50 € gedecktem Einsatz – um Cent-Beträge zu werfen lohnt sich nicht */
+  const coinStake = coinRaw >= 0.5 ? coinRaw : 0;
+
   const finalPayout = new Map<string, number>();
   perBettor.forEach((e, p) => finalPayout.set(p, e.payout));
   let coinAdjust = 0;
   const cf = d.coinflip;
   if (cf && settled) {
     const base = finalPayout.get(cf.player) ?? 0;
+    // Einsatz beim Wurf, nie mehr als heute gedeckt ist
+    const x = r2(Math.min(cf.amount, base, toPot));
     if (cf.result === 'double') {
-      finalPayout.set(cf.player, r2(base * 2));
-      coinAdjust = -base; // die Verdopplung bezahlt der Pot
+      finalPayout.set(cf.player, r2(base + x));
+      coinAdjust = -x; // bezahlt aus den verfallenen Wetteinsätzen des Abends
     } else {
-      finalPayout.set(cf.player, 0);
-      coinAdjust = base; // Gewinn verfällt -> Pot
+      finalPayout.set(cf.player, r2(base - x));
+      coinAdjust = x; // verfällt -> Pot
     }
   }
 
-  const staked = r2(bets.reduce((s, b) => s + b.stake, 0));
-  const toPot = markets.reduce((s, m) => s + m.toPot, 0);
   // Einsätze kommen aus dem Startgeld (stehen also nicht im Pot), Jackpot-Übertrag wird hier neu eingesetzt
   // und ist schon beim Vorwochen-Spieltag aus dem Pot herausgerechnet.
   const potEffect = r2(-staked + toPot + coinAdjust);
-  return { markets, settled, staked, perBettor, king, finalPayout, potEffect, budget: state.settings.betBudget };
+  return { markets, settled, staked, perBettor, king, finalPayout, potEffect, budget: state.settings.betBudget, coinStake, forfeited: toPot };
 }
 
 /** Freies Wettguthaben eines Spielers an diesem Spieltag */

@@ -118,8 +118,12 @@ Ohne diese Werte läuft die App im lokalen Testmodus **ohne Login** (Daten nur i
 - **Töpfe:** Jede Wette hat einen eigenen Topf, die richtigen Tipper teilen ihn nach Einsatz (Gleichstand = alle
   richtig). Liegt niemand richtig, geht der Topf in den Pot. **Jackpot 9-Darter** (nur „Ja“): wandert weiter, bis es passiert.
 - **Ereignisse des Abends:** Zähler für 26er/Busts, Schalter für Bull-Finish, Madhouse, 9-Darter, Auswahl erste 180.
-- **Tippkönig des Abends** (höchster Gewinn) darf per **Münzwurf „Doppelt oder nichts“** spielen: „doppelt“ –
-  der Pot legt drauf, „nichts“ – der Gewinn geht in den Pot. Dazu eine Tippkönig-Rangliste der Saison.
+- **Geschlossener Kreislauf:** Jeder setzt höchstens sein Wettguthaben, ausgezahlt wird nur, was eingesetzt wurde
+  (Töpfe werden auf Cent abgerundet, Rest-Cents gehen in den Pot). Niemand zahlt etwas nach, der Pot schießt nichts zu.
+  Wird ein Spieler nachträglich abwesend gesetzt, werden seine Wetten und Tipps auf ihn zurückgenommen.
+- **Tippkönig des Abends** (höchster Gewinn) darf per **Münzwurf** spielen. Der Einsatz ist sein Gewinn, aber höchstens
+  das, was an diesem Abend an Wetteinsätzen verfallen ist: dann echtes „doppelt oder nichts“, sonst „+X / −X“.
+  Ist weniger als 0,50 € verfallen, gibt es keinen Münzwurf. Dazu eine Tippkönig-Rangliste der Saison.
 
 ## Turnier-Modus (1 Board)
 
