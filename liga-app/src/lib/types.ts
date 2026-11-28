@@ -89,6 +89,8 @@ export interface CoinFlip {
   amount: number;
   result: 'double' | 'nothing';
   at: string;
+  /** gewählte Variante: Münze oder „Doppel oder Draußen“ */
+  mode?: 'coin' | 'dart';
 }
 
 export interface Matchday {

@@ -123,7 +123,9 @@ Ohne diese Werte läuft die App im lokalen Testmodus **ohne Login** (Daten nur i
   Wird ein Spieler nachträglich abwesend gesetzt, werden seine Wetten und Tipps auf ihn zurückgenommen.
 - **Tippkönig des Abends** (höchster Gewinn) darf per **Münzwurf** spielen. Der Einsatz ist sein Gewinn, aber höchstens
   das, was an diesem Abend an Wetteinsätzen verfallen ist: dann echtes „doppelt oder nichts“, sonst „+X / −X“.
-  Ist weniger als 0,50 € verfallen, gibt es keinen Münzwurf. Dazu eine Tippkönig-Rangliste der Saison.
+  Ist weniger als 0,50 € verfallen, gibt es keinen Münzwurf. Der Tippkönig wählt die Variante: **Münze** oder
+  **„Doppel oder Draußen“** (animierte Dartscheibe: Pfeil im Doppelring = gewonnen, daneben = verloren; ebenfalls 50:50).
+  Dazu eine Tippkönig-Rangliste der Saison.
 
 ## Turnier-Modus (1 Board)
 

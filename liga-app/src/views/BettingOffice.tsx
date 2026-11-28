@@ -15,7 +15,8 @@ import {
 import { euro } from '../lib/tournament';
 import { Matchday, uid } from '../lib/types';
 import CoinFlip from '../components/CoinFlip';
-import { Btn, Card, CardTitle } from '../components/ui';
+import DartFlip from '../components/DartFlip';
+import { Btn, Card, CardTitle, Segmented } from '../components/ui';
 
 const STAKES = [0.5, 1, 2, 5];
 
@@ -33,6 +34,7 @@ export default function BettingOffice({ day }: { day: Matchday }) {
   const [market, setMarket] = useState<string | null>(null);
   const [pick, setPick] = useState<string | null>(null);
   const [stake, setStake] = useState<number>(1);
+  const [game, setGame] = useState<'coin' | 'dart'>('coin');
 
   if (!day.started)
     return (
@@ -444,19 +446,36 @@ export default function BettingOffice({ day }: { day: Matchday }) {
                     Heute sind weniger als 0,50 € Wetteinsatz verfallen ({euro(db.forfeited)}) – zu wenig, um eine Verdopplung zu bezahlen. Darum gibt es heute keinen Münzwurf, {name(db.king.player)} bekommt die {euro(db.king.payout)} sicher.
                   </p>
                 ) : (
-                <CoinFlip
-                  name={name(db.king.player)}
-                  amount={db.king.payout}
-                  stake={day.coinflip ? Math.min(day.coinflip.amount, db.king.payout) : db.coinStake}
-                  done={day.coinflip?.result ?? null}
-                  canFlip={canEdit}
-                  onResult={(r) =>
-                    upd(
-                      (d) => void (d.coinflip = { player: db.king!.player, amount: db.coinStake, result: r, at: new Date().toISOString() }),
-                      r === 'double' ? `${name(db.king!.player)} verdoppelt!` : `${name(db.king!.player)} verliert alles – ab in den Pot`,
-                    )
-                  }
-                />
+                  (() => {
+                    const mode = day.coinflip?.mode ?? (day.coinflip ? 'coin' : game);
+                    const props = {
+                      name: name(db.king.player),
+                      amount: db.king.payout,
+                      stake: day.coinflip ? Math.min(day.coinflip.amount, db.king.payout) : db.coinStake,
+                      done: day.coinflip?.result ?? null,
+                      canFlip: canEdit,
+                      onResult: (r: 'double' | 'nothing') =>
+                        upd(
+                          (d) => void (d.coinflip = { player: db.king!.player, amount: db.coinStake, result: r, mode, at: new Date().toISOString() }),
+                          r === 'double' ? `${name(db.king!.player)} gewinnt den Wurf!` : `${name(db.king!.player)} verliert den Wurf – ab in den Pot`,
+                        ),
+                    };
+                    return (
+                      <>
+                        {!day.coinflip && canEdit && (
+                          <Segmented<'coin' | 'dart'>
+                            value={game}
+                            onChange={setGame}
+                            options={[
+                              { value: 'coin', label: '🪙 Münze' },
+                              { value: 'dart', label: '🎯 Doppel oder Draußen' },
+                            ]}
+                          />
+                        )}
+                        {mode === 'dart' ? <DartFlip key="dart" {...props} /> : <CoinFlip key="coin" {...props} />}
+                      </>
+                    );
+                  })()
                 )}
                 {!day.coinflip && db.coinStake > 0 && (
                   <p className="text-center text-[11px] text-muted">
